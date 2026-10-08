@@ -2,7 +2,7 @@
 
 Calificador de clientes para asesores de negocios de **Caja Piura**: se carga el reporte de deudas de **Sentinel** en PDF y el sistema muestra los datos clave del cliente y a qué **productos y campañas** puede acceder.
 
-🔗 **Web en línea:** https://lizbet14.github.io/filtproduc/
+🔗 **Web en línea:** https://lizbet14.github.io/FILTPRODUC/
 
 ## Qué hace hoy
 
