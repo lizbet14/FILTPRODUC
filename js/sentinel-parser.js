@@ -327,8 +327,8 @@
       cliente.deudaTotal = +cliente.detalleEntidades.reduce((s, e) => s + (e.deuda || 0), 0).toFixed(2);
     }
 
-    // Semáforo por calificación SBS (NOR verde, CPP amarillo, DUD naranja, DEF rojo, PER negro)
-    const SEM = { NORMAL: 'VERDE', CPP: 'AMARILLO', DUDOSO: 'NARANJA', DEFICIENTE: 'ROJO', PERDIDA: 'NEGRO' };
+    // Semáforo por calificación SBS (orden SBS: NOR verde, CPP amarillo, DEF naranja, DUD rojo, PER negro)
+    const SEM = { NORMAL: 'VERDE', CPP: 'AMARILLO', DEFICIENTE: 'NARANJA', DUDOSO: 'ROJO', PERDIDA: 'NEGRO' };
     cliente.semaforoSentinel = cliente.semaforo;
     cliente.semaforo = cliente.calificacion ? SEM[cliente.calificacion] || null : null;
     for (const m of cliente.historial) { m.semaforoSentinel = m.semaforo; m.semaforo = m.calificacion ? SEM[m.calificacion] || null : null; }

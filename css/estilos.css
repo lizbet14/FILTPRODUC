@@ -216,8 +216,8 @@ td.der, th.der { text-align: right; padding-right: 0; }
 
 .calif-badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: var(--verde-suave); color: var(--verde); }
 .calif-badge.CPP { background: var(--ambar-suave); color: var(--ambar); }
-.calif-badge.DUDOSO { background: var(--naranja-suave); color: var(--naranja); }
-.calif-badge.DEFICIENTE { background: var(--rojo-suave); color: var(--rojo); }
+.calif-badge.DEFICIENTE { background: var(--naranja-suave); color: var(--naranja); }
+.calif-badge.DUDOSO { background: var(--rojo-suave); color: var(--rojo); }
 .calif-badge.PERDIDA { background: var(--negro); color: #fff; }
 
 .producto { border: 1px solid var(--linea); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }

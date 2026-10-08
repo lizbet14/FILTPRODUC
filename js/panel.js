@@ -15,7 +15,7 @@
   const capital = s => s ? s.charAt(0) + s.slice(1).toLowerCase() : '';
   const CALIF_TXT = { NORMAL: 'Normal', CPP: 'CPP', DEFICIENTE: 'Deficiente', DUDOSO: 'Dudoso', PERDIDA: 'Pérdida', 'SIN CALIFICACION': 'Sin calif.' };
   // Semáforo por calificación SBS
-  const SEM_TXT = { VERDE: 'NOR · Normal', AMARILLO: 'CPP · Con problemas potenciales', NARANJA: 'DUD · Dudoso', ROJO: 'DEF · Deficiente', NEGRO: 'PER · Pérdida', GRIS: 'Sin calificación (no registra deudas)' };
+  const SEM_TXT = { VERDE: 'NOR · Normal', AMARILLO: 'CPP · Con problemas potenciales', NARANJA: 'DEF · Deficiente', ROJO: 'DUD · Dudoso', NEGRO: 'PER · Pérdida', GRIS: 'Sin calificación (no registra deudas)' };
   const SEM_COLOR = { VERDE: 'var(--verde)', AMARILLO: 'var(--ambar)', NARANJA: 'var(--naranja)', ROJO: 'var(--rojo)', NEGRO: 'var(--negro)', GRIS: 'var(--gris)' };
   const SENTINEL_TXT = { VERDE: 'sin deudas vencidas', AMARILLO: 'deudas con poco atraso', ROJO: 'deudas con atraso significativo', GRIS: 'no registra información' };
   const NOMBRE_ENTIDAD = { MIBCO: 'MIBANCO' };
@@ -232,7 +232,7 @@
             <div class="grafico">${grafico(c.historial || [], d.maximo)}</div>
             <div class="leyenda">
               <span><span class="luz VERDE"></span>NOR</span><span><span class="luz AMARILLO"></span>CPP</span>
-              <span><span class="luz NARANJA"></span>DUD</span><span><span class="luz ROJO"></span>DEF</span>
+              <span><span class="luz NARANJA"></span>DEF</span><span><span class="luz ROJO"></span>DUD</span>
               <span><span class="luz NEGRO"></span>PER</span><span><span class="luz GRIS"></span>Sin calificación</span>
               <span><span class="cuadro-max"></span>Endeudamiento máximo</span>
               ${(c.historial || []).some(h => h.entidades !== null && h.entidades !== undefined) ? '<span><b>N°</b>&nbsp;sobre la barra = entidades</span>' : ''}
@@ -328,7 +328,7 @@
         if (reg.cliente[el.name] !== nuevo) {
           reg.cliente[el.name] = nuevo;
           if (el.name === 'numEntidades') reg.cliente.numEntidadesEstimado = false;
-          if (el.name === 'calificacion') reg.cliente.semaforo = ({ NORMAL: 'VERDE', CPP: 'AMARILLO', DUDOSO: 'NARANJA', DEFICIENTE: 'ROJO', PERDIDA: 'NEGRO' })[nuevo] || null;
+          if (el.name === 'calificacion') reg.cliente.semaforo = ({ NORMAL: 'VERDE', CPP: 'AMARILLO', DEFICIENTE: 'NARANJA', DUDOSO: 'ROJO', PERDIDA: 'NEGRO' })[nuevo] || null;
           reg.editado = true;
         }
       }

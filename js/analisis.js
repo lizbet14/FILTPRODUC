@@ -143,7 +143,7 @@
     const a = [];
     const add = (nivel, texto) => a.push({ nivel, texto });
     if (c.score === null || c.score === undefined) add('info', 'No se encontró el score en el reporte. Revísalo y corrígelo manualmente.');
-    const SEM_ALERTA = { AMARILLO: ['medio', 'CPP (con problemas potenciales)'], NARANJA: ['alto', 'Dudoso'], ROJO: ['alto', 'Deficiente'], NEGRO: ['alto', 'Pérdida'] };
+    const SEM_ALERTA = { AMARILLO: ['medio', 'CPP (con problemas potenciales)'], NARANJA: ['alto', 'Deficiente'], ROJO: ['alto', 'Dudoso'], NEGRO: ['alto', 'Pérdida'] };
     if (SEM_ALERTA[c.semaforo]) add(SEM_ALERTA[c.semaforo][0], `Semáforo actual en ${c.semaforo}: calificación ${SEM_ALERTA[c.semaforo][1]}.`);
     if (c.semaforoSentinel === 'ROJO') add('alto', 'Semáforo de riesgo Sentinel en rojo: deudas con atraso significativo.');
     else if (c.semaforoSentinel === 'AMARILLO') add('medio', 'Semáforo de riesgo Sentinel en amarillo: deudas con poco atraso.');

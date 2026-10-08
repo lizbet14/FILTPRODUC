@@ -41,9 +41,9 @@
 
   /**
    * Semáforo FILTPRODUC según calificación SBS (definido por el asesor):
-   * NOR Verde · CPP Amarillo · DUD Naranja · DEF Rojo · PER Negro · sin calificación Gris
+   * NOR Verde · CPP Amarillo · DEF Naranja · DUD Rojo · PER Negro (orden de gravedad SBS) · sin calificación Gris
    */
-  const SEMAFORO_CALIF = { NORMAL: 'VERDE', CPP: 'AMARILLO', DUDOSO: 'NARANJA', DEFICIENTE: 'ROJO', PERDIDA: 'NEGRO', 'SIN CALIFICACION': 'GRIS' };
+  const SEMAFORO_CALIF = { NORMAL: 'VERDE', CPP: 'AMARILLO', DEFICIENTE: 'NARANJA', DUDOSO: 'ROJO', PERDIDA: 'NEGRO', 'SIN CALIFICACION': 'GRIS' };
   function semaforoDeCalificacion(calif, sinDeuda) {
     if (sinDeuda) return 'GRIS';
     return calif ? (SEMAFORO_CALIF[calif] || null) : null;

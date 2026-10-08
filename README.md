@@ -23,7 +23,7 @@ Calibrado con el **"Reporte de Crédito" de Sentinel / Experian** (PDF descargad
 
 1. **Carga del PDF** (`index.html`): arrastrar o elegir el reporte Sentinel. El PDF se lee **solo en el navegador** con pdf.js; no se sube a ningún servidor.
 2. **Panel del cliente** (`panel.html`):
-   - Score, semáforo por calificación SBS (NOR verde · CPP amarillo · DUD naranja · DEF rojo · PER negro), N° de entidades (IFIs), deuda total, endeudamiento máximo e ingreso estimado.
+   - Score, semáforo por calificación SBS según el orden SBS (NOR verde · CPP amarillo · DEF naranja · DUD rojo · PER negro), N° de entidades (IFIs), deuda total, endeudamiento máximo e ingreso estimado.
    - Filtros del asesor: tipo de cliente (nuevo, reactivado, recurrente) y vivienda (propia, familiar, alquilada).
    - **Perfil del RUC**: persona con negocio, solo presta servicios, empresa (RUC 20) o sin RUC; estado, condición, actividad y antigüedad.
    - **Historial de endeudamiento**: gráfico mensual con semáforo, tendencia, variación, máximo y promedio.
