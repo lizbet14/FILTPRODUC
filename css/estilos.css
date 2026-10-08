@@ -197,6 +197,39 @@ pre.texto-pdf { white-space: pre-wrap; font-size: 12px; background: var(--fondo)
 .faltantes span { font-size: 12px; background: var(--ambar-suave); color: var(--ambar); border-radius: 6px; padding: 2px 8px; font-weight: 700; }
 .estimado { font-size: 11px; color: var(--ambar); font-weight: 700; }
 
+/* ---------- productos y campañas ---------- */
+.productos { margin-bottom: 16px; }
+.prod-top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 14px; }
+.prod-top h2 { margin-bottom: 2px; }
+.resumen-prod { margin: 0; font-size: 14px; color: var(--tinta-2); }
+.resumen-prod b { color: var(--verde); font-size: 16px; }
+.tipo-cliente { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; max-width: 360px; }
+.tipo-cliente small { font-size: 12px; color: var(--tinta-3); text-align: right; }
+.etq-tipo { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--tinta-3); }
+.segmentado { display: inline-flex; background: var(--fondo); border: 1px solid var(--linea); border-radius: 10px; padding: 3px; }
+.segmentado button { border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 700; color: var(--tinta-2); padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+.segmentado button.activo { background: var(--papel); color: var(--tinta); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.prod-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.prod { border: 1px solid var(--linea); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.prod-CALIFICA { border-color: color-mix(in srgb, var(--verde) 45%, var(--linea)); }
+.prod-REVISAR { border-color: color-mix(in srgb, var(--ambar) 45%, var(--linea)); }
+.prod-cab { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.prod-cab h3 { margin: 2px 0 0; font-size: 15px; line-height: 1.3; }
+.seg { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--tinta-3); }
+.oferta { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; background: var(--fondo); border-radius: 10px; padding: 10px 12px; }
+.oferta small { display: block; font-size: 11px; color: var(--tinta-3); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+.oferta b { font-size: 15px; }
+.prod .requisitos { margin: 0; }
+.prod-mas summary, .prod-no > summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--tinta-2); }
+.prod-mas[open] summary { margin-bottom: 6px; }
+.prod-no { margin-top: 14px; }
+.prod-no > summary { padding: 8px 0; }
+.prod-no .prod-grid { margin-top: 8px; }
+.prod-no .prod { opacity: .85; }
+.verif-tit { font-size: 12px; font-weight: 800; color: var(--tinta-3); margin: 10px 0 4px; text-transform: uppercase; letter-spacing: .4px; }
+.requisitos li.verif::before { content: '☐'; color: var(--azul); }
+.vig { font-size: 12px; color: var(--tinta-3); margin: 8px 0 0; }
+
 /* ---------- tablas y detalles ---------- */
 .tabla-scroll { overflow-x: auto; }
 table.compacta { font-size: 13px; }
@@ -237,6 +270,7 @@ dialog::backdrop { background: rgba(20, 24, 30, .45); }
   .kpis { grid-template-columns: repeat(2, 1fr); }
   .rejilla { grid-template-columns: 1fr; }
   .metricas { grid-template-columns: repeat(2, 1fr); }
+  .prod-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 560px) {
   .barra { padding: 12px 16px; }
@@ -248,6 +282,9 @@ dialog::backdrop { background: rgba(20, 24, 30, .45); }
   .fuente { text-align: left; }
   .acciones .btn span { display: none; }
   .kpi .valor { font-size: 22px; white-space: normal; }
+  .prod-grid { grid-template-columns: 1fr; }
+  .tipo-cliente { align-items: flex-start; max-width: none; }
+  .tipo-cliente small { text-align: left; }
   .grafico svg { min-width: 640px; }
   .grafico::after { content: 'Desliza para ver todos los meses →'; display: block; font-size: 11px; color: var(--tinta-3); margin-top: 4px; }
   .col-opc { display: none; }

@@ -315,6 +315,19 @@
     return { protestosSinRegularizar: protestos, deudorAlimentario: dam };
   }
 
+  function datosGenerales(lineasN) {
+    const r = { genero: null, fechaNacimiento: null };
+    const i = indice(lineasN, /FECHA (DE )?NACIMIENTO/);
+    if (i < 0) return r;
+    for (let j = i; j < Math.min(lineasN.length, i + 3); j++) {
+      const g = /\b(MASCULINO|FEMENINO)\b/.exec(lineasN[j]);
+      if (g && !r.genero) r.genero = g[1];
+      const f = j > i && RE_FECHA.exec(lineasN[j]);
+      if (f && !r.fechaNacimiento) r.fechaNacimiento = iso(f[1], f[2], f[3]);
+    }
+    return r;
+  }
+
   function fechaActualizada(textoN) {
     const m = /INFORMACION ACTUALIZADA AL:\s*(\d{1,2}) DE ([A-Z]+) DEL? (\d{4})/.exec(textoN);
     if (m && MESES_LARGOS[m[2]]) return `${m[3]}-${String(MESES_LARGOS[m[2]]).padStart(2, '0')}-${m[1].padStart(2, '0')}`;
@@ -333,6 +346,7 @@
     const filas = posicionHistorica(lineasN);
     const ultima = filas[0] || null;
     const pd = protestosYDam(lineasN, textoN);
+    const dg = datosGenerales(lineasN);
     const fCreacion = /FECHA Y HORA DE CREACION:\s*(\d{2})\/(\d{2})\/(\d{4})/.exec(textoN);
 
     const dniRow = cr.DNI || null;
@@ -354,6 +368,8 @@
       formato: 'EXPERIAN',
       nombre: cab.nombre || su.razonSocial,
       dni: cab.dni,
+      genero: dg.genero,
+      fechaNacimiento: dg.fechaNacimiento,
       ruc: rucRow ? rucRow.numero : (/\b(10\d{9}|20\d{9})\b/.exec(textoN) || [])[1] || null,
       fechaReporte: fechaActualizada(textoN) || (dniRow && dniRow.fechaProceso) || null,
       fechaCreacion: fCreacion ? iso(fCreacion[1], fCreacion[2], fCreacion[3]) : null,

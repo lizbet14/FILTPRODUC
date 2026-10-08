@@ -113,11 +113,69 @@
         <td class="der num">${soles(l.aprobada)}</td><td class="der num">${soles(l.utilizada)}</td><td class="der num">${soles(l.noUtilizada)}</td></tr>`).join('')}</tbody></table>`;
   }
 
+  // ---------- productos y campañas ----------
+  const ESTADO_TXT = { CALIFICA: 'Califica', REVISAR: 'Falta un dato', NO_CALIFICA: 'No califica' };
+  const TIPOS_CLIENTE = [['NUEVO', 'Nuevo'], ['REACTIVADO', 'Reactivado'], ['RECURRENTE', 'Recurrente']];
+  const pctTxt = n => Number(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+
+  function tarjetaProducto(ev) {
+    const p = ev.producto;
+    const fallan = ev.detalle.filter(q => q.cumple === false);
+    const faltan = ev.detalle.filter(q => q.cumple === null);
+    const ok = ev.detalle.filter(q => q.cumple === true);
+    const li = (q, cls) => `<li class="${cls}">${esc(q.texto)}</li>`;
+    return `<article class="prod prod-${ev.estado}">
+      <div class="prod-cab">
+        <div><span class="seg">${esc(p.segmento)} · ${esc(p.tipo)}</span><h3>${esc(p.nombre)}</h3></div>
+        <span class="estado e-${ev.estado}">${ESTADO_TXT[ev.estado]}</span>
+      </div>
+      ${ev.estado !== 'NO_CALIFICA' && ev.tramo ? `<div class="oferta">
+          <div><small>Monto</small><b class="num">S/ ${ev.tramo.montoMin.toLocaleString('es-PE')} – ${ev.tramo.montoMax.toLocaleString('es-PE')}</b></div>
+          <div><small>TEA mínima</small><b class="num">${pctTxt(ev.tramo.teaMin)}</b></div>
+        </div>` : ''}
+      ${fallan.length ? `<ul class="requisitos">${fallan.map(q => li(q, 'no')).join('')}</ul>` : ''}
+      ${faltan.length ? `<ul class="requisitos">${faltan.map(q => li(q, 'falta')).join('')}</ul>` : ''}
+      ${ev.estado !== 'NO_CALIFICA' ? `
+        <details class="prod-mas"><summary>${ok.length} requisito(s) cumplidos · ${ev.verificar.length} por verificar</summary>
+          <ul class="requisitos">${ok.map(q => li(q, 'ok')).join('')}</ul>
+          ${ev.verificar.length ? `<p class="verif-tit">Verificar en la evaluación:</p><ul class="requisitos">${ev.verificar.map(t => `<li class="verif">${esc(t)}</li>`).join('')}</ul>` : ''}
+          ${(p.condiciones || []).length ? `<p class="verif-tit">Condiciones:</p><ul class="requisitos">${p.condiciones.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+          ${p.vigencia ? `<p class="vig">Vigente del ${fecha(p.vigencia.desde)} al ${fecha(p.vigencia.hasta)}</p>` : ''}
+        </details>` : ''}
+    </article>`;
+  }
+
+  function seccionProductos(c, a, reg) {
+    const sug = Productos.sugerirTipoCliente(c);
+    const tipo = reg.tipoCliente || sug.tipo;
+    const evals = Productos.evaluar(c, a, { tipoCliente: tipo });
+    const califica = evals.filter(e => e.estado === 'CALIFICA');
+    const revisar = evals.filter(e => e.estado === 'REVISAR');
+    const no = evals.filter(e => e.estado === 'NO_CALIFICA');
+    return `<section class="tarjeta productos">
+      <div class="prod-top">
+        <div>
+          <h2>Productos y campañas a los que accede</h2>
+          <p class="resumen-prod"><b class="num">${califica.length}</b> de ${evals.length} califican${revisar.length ? ` · <b class="num">${revisar.length}</b> con datos por revisar` : ''} · Región ${esc(Campanas.CONFIG.region)} (agencia ${esc(Campanas.CONFIG.agencia)})</p>
+        </div>
+        <div class="tipo-cliente">
+          <span class="etq-tipo">Tipo de cliente en Caja Piura</span>
+          <div class="segmentado" role="group" aria-label="Tipo de cliente">
+            ${TIPOS_CLIENTE.map(([k, t]) => `<button type="button" data-tipo="${k}" class="${k === tipo ? 'activo' : ''}">${t}</button>`).join('')}
+          </div>
+          <small>${reg.tipoCliente && reg.tipoCliente !== sug.tipo ? `Elegido por ti (sugerido: ${capital(sug.tipo)})` : 'Sugerido: ' + esc(sug.motivo)}</small>
+        </div>
+      </div>
+      ${califica.length || revisar.length ? `<div class="prod-grid">${[...califica, ...revisar].map(tarjetaProducto).join('')}</div>`
+        : '<div class="vacio">Con los datos del reporte no califica a ninguna campaña vigente.</div>'}
+      ${no.length ? `<details class="prod-no"><summary>No califica (${no.length}) · ver motivos</summary><div class="prod-grid">${no.map(tarjetaProducto).join('')}</div></details>` : ''}
+    </section>`;
+  }
+
   // ---------- render ----------
   function render(reg) {
     const c = reg.cliente;
     const a = Analisis.analizarCliente(c);
-    const evals = Productos.evaluar(c, a);
     const r = a.ruc, d = a.deuda;
     const faltan = Object.keys(NOMBRES_CAMPOS).filter(k => c.camposHallados && c.camposHallados[k] === false && (c[k] === null || c[k] === undefined));
     const otrasDeudas = c.deudaSBS !== null && c.deudaSBS !== undefined && c.deudaTotal > c.deudaSBS ? +(c.deudaTotal - c.deudaSBS).toFixed(2) : 0;
@@ -148,6 +206,8 @@
         <div class="kpi"><div class="etq">Calificación SBS</div><div class="valor">${c.calificacion ? CALIF_TXT[c.calificacion] || c.calificacion : '—'}</div>
           <div class="sub">${c.porcentajeNormal !== null && c.porcentajeNormal !== undefined ? `${c.porcentajeNormal}% de la deuda en Normal` : ''}${d.peorCalificacion && d.peorCalificacion !== c.calificacion ? ` · peor en el periodo: ${CALIF_TXT[d.peorCalificacion]}` : ''}</div></div>
       </section>
+
+      ${seccionProductos(c, a, reg)}
 
       <div class="rejilla">
         <div class="columna">
@@ -209,17 +269,6 @@
               : '<div class="alerta sin-alertas"><span>Sin alertas en el reporte.</span></div>'}
           </section>
 
-          <section class="tarjeta">
-            <h2>Productos y campañas <small>Caja Piura</small></h2>
-            ${evals.length ? evals.map(ev => `
-              <div class="producto">
-                <div class="producto-cab"><b>${esc(ev.producto.nombre)}</b><span class="estado e-${ev.estado}">${{ CALIFICA: 'Califica', REVISAR: 'Revisar', NO_CALIFICA: 'No califica' }[ev.estado]}</span></div>
-                ${ev.producto.descripcion ? `<div style="font-size:13px;color:var(--tinta-2)">${esc(ev.producto.descripcion)}</div>` : ''}
-                <ul class="requisitos">${ev.detalle.map(q => `<li class="${q.cumple === true ? 'ok' : q.cumple === false ? 'no' : 'falta'}">${esc(q.texto)}</li>`).join('')}</ul>
-              </div>`).join('')
-              : `<div class="vacio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
-                 Aún no se han cargado los productos y campañas.<br>Cuando se agreguen, aquí verás a cuáles califica el cliente y por qué.</div>`}
-          </section>
         </div>
       </div>
 
@@ -228,6 +277,13 @@
         ${faltan.length ? `<p style="font-size:13px;margin:10px 0 0">Datos que el lector no encontró:</p><div class="faltantes">${faltan.map(k => `<span>${NOMBRES_CAMPOS[k]}</span>`).join('')}</div>` : ''}
         <pre class="texto-pdf">${esc(reg.texto || '')}</pre>
       </details>`;
+    panel.querySelectorAll('.segmentado button').forEach(b => b.addEventListener('click', () => {
+      reg.tipoCliente = b.dataset.tipo;
+      try { sessionStorage.setItem(CLAVE, JSON.stringify(reg)); } catch (e) { /* sin almacenamiento */ }
+      render(reg);
+      const sec = panel.querySelector('.productos');
+      if (sec) sec.scrollIntoView({ block: 'nearest' });
+    }));
     // En celular el gráfico se desliza: mostrar primero los meses más recientes
     panel.querySelectorAll('.grafico').forEach(g => { g.scrollLeft = g.scrollWidth; });
   }

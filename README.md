@@ -40,14 +40,16 @@ Calibrado con el **"Reporte de Crédito" de Sentinel / Experian** (PDF descargad
 | `js/sentinel-experian.js` | Lector del formato real "Reporte de Crédito" Sentinel/Experian |
 | `js/sentinel-parser.js` | Detecta el formato; lector genérico de respaldo para otros formatos |
 | `js/analisis.js` | Perfil del RUC, análisis del historial de deuda y alertas |
-| `js/productos.js` | Catálogo de productos/campañas y motor de reglas |
+| `js/campanas.js` | Catálogo de campañas: solo criterios de calificación y condiciones (región por defecto: CENTRO) |
+| `js/productos.js` | Motor de calificación (tipo de cliente, ventanas de calificación, tramos por score) |
 | `vendor/pdfjs/` | pdf.js (Mozilla, Apache-2.0) incluido para no depender de CDNs |
 | `ejemplos/` | Reporte **ficticio** de prueba (datos inventados) |
 
 ## Próximos pasos
 
 - [x] Calibrar el lector con reportes Sentinel reales (cliente con negocio y cliente sin negocio).
-- [ ] Cargar el catálogo de productos y campañas de Caja Piura con sus requisitos.
-- [ ] Mostrar a qué productos califica el cliente y por qué.
+- [x] Cargar las primeras campañas (Contigo MyPerú, Crece Mujer, Al Toque, Credifamilia, Credifácil Navideño, Compra de Deuda).
+- [x] Mostrar a qué productos califica el cliente y por qué (monto y TEA según score).
+- [ ] Agregar más productos y campañas.
 
 > Herramienta de apoyo. Verificar siempre la información con los sistemas oficiales.
