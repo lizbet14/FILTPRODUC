@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FILTPRODUC · Cargar reporte</title>
+  <meta name="description" content="Calificador de clientes: lee el reporte Sentinel y muestra a qué productos y campañas accede el cliente.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <header class="barra">
+    <a class="marca" href="index.html">
+      <span class="marca-icono">FP</span>
+      <span><b>FILTPRODUC</b><small>Calificador de clientes · Asesores de negocios</small></span>
+    </a>
+  </header>
+
+  <main class="carga">
+    <h1>Carga el reporte Sentinel del cliente</h1>
+    <p class="lead">El sistema lee el PDF, extrae score, entidades que lo reportan, datos del RUC e historial de deuda, y te muestra a qué productos y campañas califica.</p>
+
+    <label class="zona" id="zona">
+      <input type="file" id="archivo" accept="application/pdf,.pdf">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 17v-6"/><path d="m9.5 13.5 2.5-2.5 2.5 2.5"/>
+      </svg>
+      <h2>Arrastra aquí el PDF o haz clic para elegirlo</h2>
+      <p>Reporte de deudas de Sentinel en formato PDF</p>
+    </label>
+
+    <div class="privacidad">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span>El PDF se lee <b>solo en tu navegador</b>. No se sube a ningún servidor ni queda guardado al cerrar la pestaña.</span>
+    </div>
+
+    <div class="progreso" id="progreso">
+      <div class="paso" data-paso="leer"><span class="punto"></span>Leyendo el PDF</div>
+      <div class="paso" data-paso="extraer"><span class="punto"></span>Extrayendo datos del reporte</div>
+      <div class="paso" data-paso="analizar"><span class="punto"></span>Analizando RUC e historial de deuda</div>
+    </div>
+    <div class="error" id="error"></div>
+
+    <p class="ejemplo">¿Solo quieres ver cómo funciona? <button type="button" id="btnEjemplo">Usar un reporte ficticio de prueba</button></p>
+
+    <section class="que-lee">
+      <h3>Qué extrae del reporte</h3>
+      <div class="chips">
+        <span class="chip">Score</span><span class="chip">Semáforo</span><span class="chip">N° de entidades (IFIs)</span>
+        <span class="chip">Deuda total y vencida</span><span class="chip">Calificación SBS</span><span class="chip">RUC y tipo de contribuyente</span>
+        <span class="chip">¿Negocio o solo servicios?</span><span class="chip">Actividad económica</span><span class="chip">Historial mensual de deuda</span>
+        <span class="chip">Detalle por entidad</span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">FILTPRODUC · Herramienta de apoyo para asesores. Verifica siempre la información con los sistemas oficiales.</footer>
+
+  <!-- pdf.js incluido en el repositorio (vendor/) para que funcione aunque la red bloquee CDNs -->
+  <script type="module">
+    import * as pdfjsLib from './vendor/pdfjs/pdf.min.mjs';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('./vendor/pdfjs/pdf.worker.min.mjs', location.href).href;
+    window.pdfjsLib = pdfjsLib;
+    window.dispatchEvent(new Event('pdfjs-listo'));
+  </script>
+  <script src="js/pdf-texto.js"></script>
+  <script src="js/sentinel-parser.js"></script>
+  <script src="js/carga.js"></script>
+</body>
+</html>

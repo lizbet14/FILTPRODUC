@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FILTPRODUC · Panel del cliente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <header class="barra">
+    <a class="marca" href="index.html">
+      <span class="marca-icono">FP</span>
+      <span><b>FILTPRODUC</b><small>Calificador de clientes · Asesores de negocios</small></span>
+    </a>
+    <div class="acciones">
+      <button class="btn" id="btnEditar" type="button" title="Corregir datos">✎ <span>Corregir datos</span></button>
+      <button class="btn" id="btnImprimir" type="button" title="Imprimir">⎙ <span>Imprimir</span></button>
+      <a class="btn btn-primario" href="index.html">＋ <span>Nuevo reporte</span></a>
+    </div>
+  </header>
+
+  <main class="panel" id="panel"></main>
+
+  <dialog id="dlgEditar">
+    <form class="form-edicion" id="formEditar" method="dialog">
+      <h2>Corregir datos del cliente</h2>
+      <p>Si el lector no encontró algún dato o lo leyó mal, corrígelo aquí. El análisis se recalcula al guardar.</p>
+      <div class="campos">
+        <label class="ancho">Nombre<input name="nombre"></label>
+        <label>DNI<input name="dni" inputmode="numeric" maxlength="8"></label>
+        <label>RUC<input name="ruc" inputmode="numeric" maxlength="11"></label>
+        <label>Score<input name="score" type="number" min="0"></label>
+        <label>Semáforo actual
+          <select name="semaforo"><option value="">—</option><option>VERDE</option><option>AMARILLO</option><option>ROJO</option><option>GRIS</option></select>
+        </label>
+        <label>N° de entidades<input name="numEntidades" type="number" min="0"></label>
+        <label>Deuda total (S/)<input name="deudaTotal" type="number" step="0.01" min="0"></label>
+        <label>Deuda vencida (S/)<input name="deudaVencida" type="number" step="0.01" min="0"></label>
+        <label>Calificación SBS
+          <select name="calificacion"><option value="">—</option><option>NORMAL</option><option>CPP</option><option>DEFICIENTE</option><option>DUDOSO</option><option>PERDIDA</option></select>
+        </label>
+        <label class="ancho">Tipo de contribuyente<input name="tipoContribuyente" placeholder="Ej.: PERSONA NATURAL CON NEGOCIO"></label>
+        <label class="ancho">Actividad económica<input name="actividad"></label>
+        <label>Estado del RUC<input name="estadoRuc" placeholder="ACTIVO"></label>
+        <label>Inicio de actividades<input name="inicioActividades" type="date"></label>
+      </div>
+      <div class="pie-form">
+        <button class="btn btn-texto" value="cancelar" type="submit">Cancelar</button>
+        <button class="btn btn-primario" value="guardar" type="submit">Guardar y recalcular</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer class="pie">FILTPRODUC · Herramienta de apoyo para asesores. Verifica siempre la información con los sistemas oficiales.</footer>
+
+  <script src="js/analisis.js"></script>
+  <script src="js/productos.js"></script>
+  <script src="js/panel.js"></script>
+</body>
+</html>
