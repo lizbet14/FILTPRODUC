@@ -14,7 +14,10 @@
   const antig = m => m === null || m === undefined ? '—' : (m >= 12 ? `${Math.floor(m / 12)} año(s)${m % 12 ? ' y ' + (m % 12) + ' mes(es)' : ''}` : `${m} mes(es)`);
   const capital = s => s ? s.charAt(0) + s.slice(1).toLowerCase() : '';
   const CALIF_TXT = { NORMAL: 'Normal', CPP: 'CPP', DEFICIENTE: 'Deficiente', DUDOSO: 'Dudoso', PERDIDA: 'Pérdida', 'SIN CALIFICACION': 'Sin calif.' };
-  const SEM_TXT = { VERDE: 'Sin deudas vencidas', AMARILLO: 'Deudas con poco atraso', ROJO: 'Deudas con atraso significativo', GRIS: 'No registra información de deudas' };
+  // Semáforo por calificación SBS
+  const SEM_TXT = { VERDE: 'NOR · Normal', AMARILLO: 'CPP · Con problemas potenciales', NARANJA: 'DUD · Dudoso', ROJO: 'DEF · Deficiente', NEGRO: 'PER · Pérdida', GRIS: 'Sin calificación (no registra deudas)' };
+  const SEM_COLOR = { VERDE: 'var(--verde)', AMARILLO: 'var(--ambar)', NARANJA: 'var(--naranja)', ROJO: 'var(--rojo)', NEGRO: 'var(--negro)', GRIS: 'var(--gris)' };
+  const SENTINEL_TXT = { VERDE: 'sin deudas vencidas', AMARILLO: 'deudas con poco atraso', ROJO: 'deudas con atraso significativo', GRIS: 'no registra información' };
   const NOMBRE_ENTIDAD = { MIBCO: 'MIBANCO' };
   const ESTADO_ENT = { CON_DEUDA: ['Con deuda', 'e-CALIFICA'], SIN_SALDO: ['Sin saldo', 'e-REVISAR'], YA_NO_REPORTA: ['Ya no reporta', 'e-INFO'] };
   const NOMBRES_CAMPOS = {
@@ -60,8 +63,8 @@
         s += `<rect x="${cx - bw / 2}" y="${yy}" width="${bw}" height="${Math.max(1, H - mB - yy)}" rx="3" fill="${esMax ? 'var(--acento)' : 'var(--marca)'}" opacity="${esUlt || esMax ? 1 : 0.45}"><title>${esc(h.etiqueta)}: ${soles(h.deuda)}${h.entidades !== null && h.entidades !== undefined ? ' · ' + h.entidades + ' entidad(es)' : ''}${h.calificacion ? ' · ' + h.calificacion : ''}</title></rect>`;
         if (conEntidades && h.entidades !== null && h.entidades !== undefined) s += `<text x="${cx}" y="${yy - 5}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--tinta-2)">${h.entidades}</text>`;
       }
-      const color = { VERDE: 'var(--verde)', AMARILLO: 'var(--ambar)', ROJO: 'var(--rojo)', GRIS: 'var(--gris)' }[h.semaforo] || 'var(--linea)';
-      s += `<circle cx="${cx}" cy="${H - mB + 11}" r="4.5" fill="${color}"><title>Semáforo ${esc(h.etiqueta)}: ${h.semaforo || 'sin dato'}${h.semaforoValor !== undefined && h.semaforoValor !== null ? ' (' + h.semaforoValor.toFixed(3) + ')' : ''}</title></circle>`;
+      const color = SEM_COLOR[h.semaforo] || 'var(--linea)';
+      s += `<circle cx="${cx}" cy="${H - mB + 11}" r="4.5" fill="${color}"${h.semaforo === 'NEGRO' ? ' stroke="var(--tinta-3)" stroke-width="1"' : ''}><title>${esc(h.etiqueta)}: ${h.semaforo ? SEM_TXT[h.semaforo] : 'sin dato'}</title></circle>`;
       const [mes, anio] = h.etiqueta.split(' ');
       s += `<text x="${cx}" y="${H - mB + 29}" text-anchor="middle" font-size="10" fill="var(--tinta-2)">${esc(mes)}</text>`;
       if (i === 0 || mes === 'Ene') s += `<text x="${cx}" y="${H - mB + 42}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--tinta-3)">${esc(anio)}</text>`;
@@ -76,7 +79,7 @@
         <thead><tr><th>Fecha</th><th>Sem.</th><th class="der">Entid.</th><th class="der">Deuda SBS</th><th class="der">% Normal</th><th class="der">Vencida</th><th class="der">Doc. impagos</th></tr></thead>
         <tbody>${filas.map(f => `<tr>
           <td class="num">${fecha(f.fecha)}</td>
-          <td><span class="luz ${f.semaforo}" title="${f.semaforoValor !== null ? f.semaforoValor.toFixed(3) : ''}"></span></td>
+          <td><span class="luz ${f.semaforo}" title="${f.semaforo ? SEM_TXT[f.semaforo] : 'sin dato'}"></span></td>
           <td class="der num">${v(f.entidades)}</td><td class="der num">${soles(f.deuda)}</td>
           <td class="der num">${f.pctNormal === null ? (f.calificacion ? CALIF_TXT[f.calificacion] || f.calificacion : '—') : f.pctNormal.toFixed(0) + '%'}</td>
           <td class="der num">${f.deudaVencida ? soles(f.deudaVencida) : '—'}</td>
@@ -116,6 +119,7 @@
   // ---------- productos y campañas ----------
   const ESTADO_TXT = { CALIFICA: 'Califica', REVISAR: 'Falta un dato', NO_CALIFICA: 'No califica' };
   const TIPOS_CLIENTE = [['NUEVO', 'Nuevo'], ['REACTIVADO', 'Reactivado'], ['RECURRENTE', 'Recurrente']];
+  const VIVIENDAS = [['PROPIA', 'Propia'], ['FAMILIAR', 'Familiar'], ['ALQUILADA', 'Alquilada']];
   const pctTxt = n => Number(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
 
   function tarjetaProducto(ev) {
@@ -129,6 +133,7 @@
         <div><span class="seg">${esc(p.segmento)} · ${esc(p.tipo)}</span><h3>${esc(p.nombre)}</h3></div>
         <span class="estado e-${ev.estado}">${ESTADO_TXT[ev.estado]}</span>
       </div>
+      ${ev.nota && ev.estado !== 'NO_CALIFICA' ? `<p class="nota-prod">${esc(ev.nota)}</p>` : ''}
       ${ev.estado !== 'NO_CALIFICA' && ev.tramo ? `<div class="oferta">
           <div><small>Monto</small><b class="num">S/ ${ev.tramo.montoMin.toLocaleString('es-PE')} – ${ev.tramo.montoMax.toLocaleString('es-PE')}</b></div>
           <div><small>TEA mínima</small><b class="num">${pctTxt(ev.tramo.teaMin)}</b></div>
@@ -148,7 +153,8 @@
   function seccionProductos(c, a, reg) {
     const sug = Productos.sugerirTipoCliente(c);
     const tipo = reg.tipoCliente || sug.tipo;
-    const evals = Productos.evaluar(c, a, { tipoCliente: tipo });
+    const vivienda = reg.vivienda || null;
+    const evals = Productos.evaluar(c, a, { tipoCliente: tipo, vivienda });
     const califica = evals.filter(e => e.estado === 'CALIFICA');
     const revisar = evals.filter(e => e.estado === 'REVISAR');
     const no = evals.filter(e => e.estado === 'NO_CALIFICA');
@@ -158,12 +164,21 @@
           <h2>Productos y campañas a los que accede</h2>
           <p class="resumen-prod"><b class="num">${califica.length}</b> de ${evals.length} califican${revisar.length ? ` · <b class="num">${revisar.length}</b> con datos por revisar` : ''} · Región ${esc(Campanas.CONFIG.region)} (agencia ${esc(Campanas.CONFIG.agencia)})</p>
         </div>
-        <div class="tipo-cliente">
-          <span class="etq-tipo">Tipo de cliente en Caja Piura</span>
-          <div class="segmentado" role="group" aria-label="Tipo de cliente">
-            ${TIPOS_CLIENTE.map(([k, t]) => `<button type="button" data-tipo="${k}" class="${k === tipo ? 'activo' : ''}">${t}</button>`).join('')}
+        <div class="filtros-cliente">
+          <div class="tipo-cliente">
+            <span class="etq-tipo">Tipo de cliente en Caja Piura</span>
+            <div class="segmentado" role="group" aria-label="Tipo de cliente">
+              ${TIPOS_CLIENTE.map(([k, t]) => `<button type="button" data-tipo="${k}" class="${k === tipo ? 'activo' : ''}">${t}</button>`).join('')}
+            </div>
+            <small>${reg.tipoCliente && reg.tipoCliente !== sug.tipo ? `Elegido por ti (sugerido: ${capital(sug.tipo)})` : 'Sugerido: ' + esc(sug.motivo)}</small>
           </div>
-          <small>${reg.tipoCliente && reg.tipoCliente !== sug.tipo ? `Elegido por ti (sugerido: ${capital(sug.tipo)})` : 'Sugerido: ' + esc(sug.motivo)}</small>
+          <div class="tipo-cliente">
+            <span class="etq-tipo">Vivienda del cliente</span>
+            <div class="segmentado" role="group" aria-label="Vivienda del cliente">
+              ${VIVIENDAS.map(([k, t]) => `<button type="button" data-vivienda="${k}" class="${k === vivienda ? 'activo' : ''}">${t}</button>`).join('')}
+            </div>
+            <small class="${vivienda ? '' : 'pendiente'}">${vivienda ? (vivienda === 'ALQUILADA' ? 'Varias campañas exigen casa propia o familiar.' : 'Cumple domicilio estable.') : 'Elígela: algunas campañas no aceptan vivienda alquilada.'}</small>
+          </div>
         </div>
       </div>
       ${califica.length || revisar.length ? `<div class="prod-grid">${[...califica, ...revisar].map(tarjetaProducto).join('')}</div>`
@@ -195,16 +210,17 @@
 
       <section class="kpis">
         <div class="kpi destacado"><div class="etq">Score Experian</div><div class="valor num">${v(c.score)}</div><div class="sub">${esc(c.scoreTexto || 'Sentinel')}</div></div>
-        <div class="kpi"><div class="etq">Semáforo actual</div><div class="valor"><span class="semaforo"><span class="luz ${c.semaforo}"></span>${c.semaforo ? capital(c.semaforo) : '—'}</span></div>
-          <div class="sub">${SEM_TXT[c.semaforo] || ''}${c.semaforoValor !== null && c.semaforoValor !== undefined ? ` · ${Number(c.semaforoValor).toFixed(3)}` : ''}</div></div>
+        <div class="kpi"><div class="etq">Semáforo · Calificación SBS</div><div class="valor"><span class="semaforo"><span class="luz ${c.semaforo}"></span>${c.semaforo ? capital(c.semaforo) : '—'}</span></div>
+          <div class="sub">${SEM_TXT[c.semaforo] || 'Sin dato de calificación'}${c.porcentajeNormal !== null && c.porcentajeNormal !== undefined && c.porcentajeNormal < 100 ? ` · ${c.porcentajeNormal}% en Normal` : ''}${d.peorCalificacion && d.peorCalificacion !== c.calificacion ? ` · peor en el periodo: ${CALIF_TXT[d.peorCalificacion]}` : ''}</div>
+          ${c.semaforoSentinel ? `<div class="sub sub-sentinel">Riesgo Sentinel: ${SENTINEL_TXT[c.semaforoSentinel] || c.semaforoSentinel.toLowerCase()}${c.semaforoValor !== null && c.semaforoValor !== undefined ? ` (${Number(c.semaforoValor).toFixed(3)})` : ''}</div>` : ''}</div>
         <div class="kpi"><div class="etq">Entidades que lo reportan</div><div class="valor num">${v(c.numEntidades)}</div>
           <div class="sub">${c.numEntidadesEstimado ? '<span class="estimado">ESTIMADO DEL DETALLE</span>' : d.entidadesMax ? `Máximo en 24 meses: <b>${d.entidadesMax}</b>` : 'a la fecha'}</div></div>
         <div class="kpi"><div class="etq">Deuda total actual</div><div class="valor num">${soles(c.deudaTotal)}</div>
           <div class="sub">${otrasDeudas ? `SBS ${soles(c.deudaSBS)} + otros ${soles(otrasDeudas)}` : `Vencida: ${soles(c.deudaVencida)}`}</div></div>
         <div class="kpi"><div class="etq">Endeudamiento máximo</div><div class="valor num">${soles(d.maximo)}</div>
           <div class="sub">${d.fechaMaximo ? `${esc(d.fechaMaximo)}` : ''}${d.desdeMaximo !== null && d.desdeMaximo < -0.01 ? ` · hoy ${(Math.abs(d.desdeMaximo) * 100).toFixed(0)}% menos` : d.desdeMaximo !== null && Math.abs(d.desdeMaximo) <= 0.01 ? ' · es su deuda actual' : ''}${d.meses ? ` · últimos ${d.meses} meses` : ''}</div></div>
-        <div class="kpi"><div class="etq">Calificación SBS</div><div class="valor">${c.calificacion ? CALIF_TXT[c.calificacion] || c.calificacion : '—'}</div>
-          <div class="sub">${c.porcentajeNormal !== null && c.porcentajeNormal !== undefined ? `${c.porcentajeNormal}% de la deuda en Normal` : ''}${d.peorCalificacion && d.peorCalificacion !== c.calificacion ? ` · peor en el periodo: ${CALIF_TXT[d.peorCalificacion]}` : ''}</div></div>
+        <div class="kpi"><div class="etq">Ingreso estimado</div><div class="valor num">${c.ingresoEstimado ? esc(c.ingresoEstimado.texto) : '—'}</div>
+          <div class="sub">${c.ingresoEstimado ? 'Rango mensual según Sentinel' : 'El reporte no lo indica'}</div></div>
       </section>
 
       ${seccionProductos(c, a, reg)}
@@ -215,8 +231,9 @@
             <h2>Historial de endeudamiento <span class="tendencia t-${d.tendencia}">${esc(d.tendenciaTexto)}</span></h2>
             <div class="grafico">${grafico(c.historial || [], d.maximo)}</div>
             <div class="leyenda">
-              <span><span class="luz VERDE"></span>Verde</span><span><span class="luz AMARILLO"></span>Amarillo</span>
-              <span><span class="luz ROJO"></span>Rojo</span><span><span class="luz GRIS"></span>Sin información</span>
+              <span><span class="luz VERDE"></span>NOR</span><span><span class="luz AMARILLO"></span>CPP</span>
+              <span><span class="luz NARANJA"></span>DUD</span><span><span class="luz ROJO"></span>DEF</span>
+              <span><span class="luz NEGRO"></span>PER</span><span><span class="luz GRIS"></span>Sin calificación</span>
               <span><span class="cuadro-max"></span>Endeudamiento máximo</span>
               ${(c.historial || []).some(h => h.entidades !== null && h.entidades !== undefined) ? '<span><b>N°</b>&nbsp;sobre la barra = entidades</span>' : ''}
             </div>
@@ -278,7 +295,8 @@
         <pre class="texto-pdf">${esc(reg.texto || '')}</pre>
       </details>`;
     panel.querySelectorAll('.segmentado button').forEach(b => b.addEventListener('click', () => {
-      reg.tipoCliente = b.dataset.tipo;
+      if (b.dataset.tipo) reg.tipoCliente = b.dataset.tipo;
+      if (b.dataset.vivienda) reg.vivienda = reg.vivienda === b.dataset.vivienda ? null : b.dataset.vivienda;
       try { sessionStorage.setItem(CLAVE, JSON.stringify(reg)); } catch (e) { /* sin almacenamiento */ }
       render(reg);
       const sec = panel.querySelector('.productos');
@@ -310,7 +328,7 @@
         if (reg.cliente[el.name] !== nuevo) {
           reg.cliente[el.name] = nuevo;
           if (el.name === 'numEntidades') reg.cliente.numEntidadesEstimado = false;
-          if (el.name === 'semaforo') reg.cliente.semaforoValor = null;
+          if (el.name === 'calificacion') reg.cliente.semaforo = ({ NORMAL: 'VERDE', CPP: 'AMARILLO', DUDOSO: 'NARANJA', DEFICIENTE: 'ROJO', PERDIDA: 'NEGRO' })[nuevo] || null;
           reg.editado = true;
         }
       }

@@ -23,6 +23,9 @@
   --ambar: #b97900;
   --ambar-suave: #fdf3dc;
   --gris: #8a929c;
+  --naranja: #e8710a;
+  --naranja-suave: #fdecdc;
+  --negro: #111111;
   --azul: #1d56a8;
   --azul-suave: #e8effb;
   --radio: 14px;
@@ -35,7 +38,7 @@
     --tinta: #eaf0f8; --tinta-2: #b4c0d2; --tinta-3: #8593a8; --linea: #26334a;
     --fondo: #0d1422; --papel: #151f31; --rojo: #ec5a5f; --rojo-oscuro: #d14248; --rojo-suave: #3a1d24;
     --verde: #45c27c; --verde-suave: #16302a; --ambar: #e9b23a; --ambar-suave: #3a2f15;
-    --azul: #7aa7ea; --azul-suave: #172a47;
+    --azul: #7aa7ea; --azul-suave: #172a47; --naranja: #f5893a; --naranja-suave: #3a2416; --negro: #000000;
     --marca: #6a9cf0; --marca-oscuro: #4f86e0; --marca-suave: #16284a; --barra-fondo: #0b2557;
     --acento: #fdb92e; --acento-oscuro: #f0a500; --acento-suave: #3b2f14; --acento-tinta: #241a00;
     --sombra: 0 1px 2px rgba(0, 0, 0, .35);
@@ -47,7 +50,7 @@
     --tinta: #eaf0f8; --tinta-2: #b4c0d2; --tinta-3: #8593a8; --linea: #26334a;
     --fondo: #0d1422; --papel: #151f31; --rojo: #ec5a5f; --rojo-oscuro: #d14248; --rojo-suave: #3a1d24;
     --verde: #45c27c; --verde-suave: #16302a; --ambar: #e9b23a; --ambar-suave: #3a2f15;
-    --azul: #7aa7ea; --azul-suave: #172a47;
+    --azul: #7aa7ea; --azul-suave: #172a47; --naranja: #f5893a; --naranja-suave: #3a2416; --negro: #000000;
     --marca: #6a9cf0; --marca-oscuro: #4f86e0; --marca-suave: #16284a; --barra-fondo: #0b2557;
     --acento: #fdb92e; --acento-oscuro: #f0a500; --acento-suave: #3b2f14; --acento-tinta: #241a00;
     --sombra: 0 1px 2px rgba(0, 0, 0, .35);
@@ -159,7 +162,9 @@ body { transition: background-color .2s, color .2s; }
 .kpi.destacado .etq, .kpi.destacado .sub { color: rgba(255, 255, 255, .7); }
 .semaforo { display: inline-flex; align-items: center; gap: 8px; }
 .luz { width: 16px; height: 16px; border-radius: 50%; display: inline-block; flex: none; }
-.luz.VERDE { background: var(--verde); } .luz.AMARILLO { background: var(--ambar); } .luz.ROJO { background: var(--rojo); } .luz.GRIS, .luz.null { background: var(--gris); }
+.luz.VERDE { background: var(--verde); } .luz.AMARILLO { background: var(--ambar); } .luz.NARANJA { background: var(--naranja); }
+.luz.ROJO { background: var(--rojo); } .luz.NEGRO { background: var(--negro); box-shadow: 0 0 0 1px var(--tinta-3); } .luz.GRIS, .luz.null { background: var(--gris); }
+.sub-sentinel { font-size: 12px; color: var(--tinta-3); margin-top: 4px; }
 
 .rejilla { display: grid; grid-template-columns: 1.55fr 1fr; gap: 16px; }
 .columna { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
@@ -211,7 +216,9 @@ td.der, th.der { text-align: right; padding-right: 0; }
 
 .calif-badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: var(--verde-suave); color: var(--verde); }
 .calif-badge.CPP { background: var(--ambar-suave); color: var(--ambar); }
-.calif-badge.DEFICIENTE, .calif-badge.DUDOSO, .calif-badge.PERDIDA { background: var(--rojo-suave); color: var(--rojo); }
+.calif-badge.DUDOSO { background: var(--naranja-suave); color: var(--naranja); }
+.calif-badge.DEFICIENTE { background: var(--rojo-suave); color: var(--rojo); }
+.calif-badge.PERDIDA { background: var(--negro); color: #fff; }
 
 .producto { border: 1px solid var(--linea); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
 .producto-cab { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
@@ -240,7 +247,10 @@ pre.texto-pdf { white-space: pre-wrap; font-size: 12px; background: var(--fondo)
 .prod-top h2 { margin-bottom: 2px; }
 .resumen-prod { margin: 0; font-size: 14px; color: var(--tinta-2); }
 .resumen-prod b { color: var(--verde); font-size: 16px; }
-.tipo-cliente { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; max-width: 360px; }
+.filtros-cliente { display: flex; gap: 20px; flex-wrap: wrap; justify-content: flex-end; }
+.tipo-cliente { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; max-width: 300px; }
+.tipo-cliente small.pendiente { color: var(--ambar); font-weight: 700; }
+.nota-prod { margin: 0; font-size: 12.5px; background: var(--ambar-suave); color: var(--tinta-2); border-radius: 8px; padding: 8px 10px; border-left: 3px solid var(--ambar); }
 .tipo-cliente small { font-size: 12px; color: var(--tinta-3); text-align: right; }
 .etq-tipo { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--tinta-3); }
 .segmentado { display: inline-flex; background: var(--fondo); border: 1px solid var(--linea); border-radius: 10px; padding: 3px; }
@@ -321,6 +331,7 @@ dialog::backdrop { background: rgba(20, 24, 30, .45); }
   .kpi .valor { font-size: 22px; white-space: normal; }
   .prod-grid { grid-template-columns: 1fr; }
   .tipo-cliente { align-items: flex-start; max-width: none; }
+  .filtros-cliente { justify-content: flex-start; gap: 14px; }
   .tipo-cliente small { text-align: left; }
   .grafico svg { min-width: 640px; }
   .grafico::after { content: 'Desliza para ver todos los meses →'; display: block; font-size: 11px; color: var(--tinta-3); margin-top: 4px; }

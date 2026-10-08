@@ -32,6 +32,8 @@
   }
 
   const NEGOCIO = ['NEGOCIO', 'EMPRESA'];
+  // Vivienda del cliente: PROPIA | FAMILIAR | ALQUILADA (la elige el asesor en el panel)
+  const viviendaEstable = texto => ({ campo: 'vivienda', op: 'in', valor: ['PROPIA', 'FAMILIAR'], texto });
   const ifis = (nuevos, recurrentes, nota = 'incluida Caja Piura') => [
     { campo: 'numEntidades', op: '<=', valor: nuevos, soloPara: ['NUEVO', 'REACTIVADO'], texto: `Hasta ${nuevos} IFIs (${nota}) para clientes nuevos/reactivados` },
     { campo: 'numEntidades', op: '<=', valor: recurrentes, soloPara: ['RECURRENTE'], texto: `Hasta ${recurrentes} IFIs (${nota}) para clientes recurrentes` }
@@ -73,9 +75,10 @@
           { campo: 'genero', op: '==', valor: 'FEMENINO', texto: 'Género femenino' },
           { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Actividad empresarial (negocio)' },
           { campo: 'normalActual', op: '==', valor: true, texto: 'Clasificación crediticia 100% Normal' },
-          { campo: 'numEntidades', op: '<=', valor: 3, texto: 'Hasta 3 IFIs incluida Caja Piura' }
+          { campo: 'numEntidades', op: '<=', valor: 3, texto: 'Hasta 3 IFIs incluida Caja Piura' },
+          viviendaEstable('Domicilio estable: casa propia o de familia (no alquilada)')
         ],
-        verificar: ['Domicilio estable: casa propia o de familia (recibo de servicios)'],
+        verificar: ['Sustentar el domicilio con copia del recibo de servicios'],
         tramos: [{ scoreMin: 0, scoreMax: 999, montoMin: 500, montoMax: 30000, teaMin: 34.45 }],
         condiciones: ['Capital de trabajo hasta 24 meses, activo fijo hasta 36 meses o libre amortización 90 días', 'A sola firma', 'Paralelo a otro Crece Mujer permitido del 01/09 al 31/12/2026']
       },
@@ -87,9 +90,10 @@
           { campo: 'esPersonaNatural', op: '==', valor: true, texto: 'Persona natural', siFalta: 'cumple' },
           ...ifis(3, 4),
           { campo: 'normal3m', op: '==', valor: true, texto: 'Calificación 100% Normal últimos 3 meses' },
-          { campo: 'score', op: '>=', valor: 477, texto: 'Score desde 477 (no bancarizados: primer rango, máx. S/ 3,000)', siFalta: 'revisar' }
+          { campo: 'score', op: '>=', valor: 477, texto: 'Score desde 477 (no bancarizados: primer rango, máx. S/ 3,000)', siFalta: 'revisar' },
+          viviendaEstable('Domicilio estable: casa propia o de familia (no alquilada)')
         ],
-        verificar: ['Domicilio estable: casa propia o de familia'],
+        verificar: [],
         tramos: [
           { scoreMin: 477, scoreMax: 597, montoMin: 500, montoMax: 3000, teaMin: 42.58 },
           { scoreMin: 598, scoreMax: 721, montoMin: 500, montoMax: 20000, teaMin: 34.49 },
@@ -104,9 +108,10 @@
         requisitos: [
           { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Contar con negocio propio activo' },
           { campo: 'normalActual', op: '==', valor: true, texto: 'Calificación 100% Normal en el sistema financiero' },
-          ...ifis(3, 4)
+          ...ifis(3, 4),
+          viviendaEstable('Estabilidad domiciliaria: casa propia o familiar (numeral 7.2 del reglamento)')
         ],
-        verificar: ['Estabilidad domiciliaria (numeral 7.2 del reglamento)', 'Documentos que acrediten el negocio', 'No puede liquidar un crédito empresarial vigente'],
+        verificar: ['Documentos que acrediten el negocio', 'No puede liquidar un crédito empresarial vigente'],
         tramos: [{ scoreMin: 0, scoreMax: 999, montoMin: 500, montoMax: 20000, teaMin: 27.5 }],
         condiciones: ['Cuotas fijas hasta 24 meses o libre amortización 90 días', 'Un solo crédito por cliente', 'Ampliación con 20% del capital pagado']
       },
@@ -120,9 +125,10 @@
           { campo: 'score', op: '>=', valor: minFamilia, texto: `Score desde ${minFamilia} (región ${region})` },
           { campo: 'normal6m', op: '==', valor: true, texto: 'Calificación 100% Normal últimos 6 meses' },
           ...ifis(3, 4),
-          { campo: 'ingresoEstimadoMin', op: '>=', valor: 850, texto: 'Ingreso mínimo familiar S/ 850 (referencia: ingreso estimado)', siFalta: 'revisar' }
+          { campo: 'ingresoEstimadoMin', op: '>=', valor: 850, texto: 'Ingreso mínimo familiar S/ 850 (referencia: ingreso estimado)', siFalta: 'revisar' },
+          viviendaEstable('Domicilio estable: casa propia o familiar')
         ],
-        verificar: ['Domicilio estable', 'No estar sobreendeudado', 'Solo un crédito de campaña vigente'],
+        verificar: ['No estar sobreendeudado', 'Solo un crédito de campaña vigente'],
         tramos: tramosCredifamiliaNav,
         condiciones: ['Plazo de 6 a 24 cuotas fijas mensuales', 'Paralelo (recurrente con crédito vigente): hasta S/ 15,000 y mora promedio 0', 'Primera cuota hasta 60 días después del desembolso']
       },
@@ -137,7 +143,8 @@
           ...ifis(3, 4),
           { campo: 'ingresoEstimadoMin', op: '>=', valor: 850, texto: 'Ingreso mínimo familiar S/ 850 (referencia: ingreso estimado)', siFalta: 'revisar' }
         ],
-        verificar: ['Sustento de ingresos: boletas, recibos por honorarios o declaración jurada', 'Dependientes: más de 6 meses de continuidad laboral y empresa con más de 2 años', 'Domicilio estable', 'No estar sobreendeudado'],
+        verificar: ['Sustento de ingresos: boletas, recibos por honorarios o declaración jurada', 'Dependientes: más de 6 meses de continuidad laboral y empresa con más de 2 años', 'No estar sobreendeudado'],
+        siAlquilada: { montoMax: 5000, plazoMax: 18, nota: 'Vivienda alquilada: solo con ingresos de 4ta o 5ta categoría, antigüedad laboral e ingresos fijos (sin fiador con casa propia). Hasta S/ 5,000 a 18 meses.' },
         tramos: [{ scoreMin: minPersona, scoreMax: 999, montoMin: 500, montoMax: 50000, teaMin: 18.5 }],
         condiciones: ['Plazo de 6 a 24 cuotas fijas mensuales', 'Con declaración jurada: hasta S/ 6,000', '4ta/5ta categoría sin domicilio estable ni fiador: hasta S/ 5,000 a 18 meses', 'Paralelo: hasta S/ 15,000']
       },

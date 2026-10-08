@@ -39,6 +39,16 @@
     return 'ROJO';
   }
 
+  /**
+   * Semáforo FILTPRODUC según calificación SBS (definido por el asesor):
+   * NOR Verde · CPP Amarillo · DUD Naranja · DEF Rojo · PER Negro · sin calificación Gris
+   */
+  const SEMAFORO_CALIF = { NORMAL: 'VERDE', CPP: 'AMARILLO', DUDOSO: 'NARANJA', DEFICIENTE: 'ROJO', PERDIDA: 'NEGRO', 'SIN CALIFICACION': 'GRIS' };
+  function semaforoDeCalificacion(calif, sinDeuda) {
+    if (sinDeuda) return 'GRIS';
+    return calif ? (SEMAFORO_CALIF[calif] || null) : null;
+  }
+
   function esExperian(textoN) {
     return /EXPERIAN/.test(textoN) && /(POSICION HISTORICA|CONSULTA RAPIDA|REPORTE DE CREDITO)/.test(textoN);
   }
@@ -275,11 +285,13 @@
       const deuda = resto.length > 1 ? monto(resto[1]) : null;
       const pctNormal = resto.length > 2 ? monto(resto[2]) : null;
       const sinDeuda = (entidades === 0 || entidades === null) && !deuda;
+      const califMes = sinDeuda ? null : (peor ? CALIF[peor] : (pctNormal === 100 ? 'NORMAL' : null));
       filas.push({
         fecha: iso(m[1], m[2], m[3]), periodo: `${m[3]}-${m[2]}`, etiqueta: `${MES_TXT[+m[2]]} ${m[3]}`,
-        semaforoValor, semaforo: colorSemaforo(semaforoValor, sinDeuda),
+        semaforoValor, semaforoSentinel: colorSemaforo(semaforoValor, sinDeuda),
+        semaforo: semaforoDeCalificacion(califMes, sinDeuda),
         entidades, deuda, pctNormal,
-        calificacion: peor ? CALIF[peor] : (pctNormal === 100 ? 'NORMAL' : null),
+        calificacion: califMes,
         deudaVencida: vencida, protestos, docsImpagos: impagos, deudaTributaria: tributaria, deudaLaboral: laboral,
         ctasCerradas: conteos[0], otrosCreditos: conteos[1], reportesNegativos: conteos[2]
       });
@@ -293,7 +305,7 @@
     for (const f of filas) if (!porMes.has(f.periodo)) porMes.set(f.periodo, f);
     return [...porMes.values()].sort((a, b) => a.periodo.localeCompare(b.periodo)).map(f => ({
       periodo: f.periodo, etiqueta: f.etiqueta, fecha: f.fecha, deuda: f.deuda, semaforo: f.semaforo,
-      semaforoValor: f.semaforoValor, entidades: f.entidades, calificacion: f.calificacion, pctNormal: f.pctNormal,
+      semaforoValor: f.semaforoValor, semaforoSentinel: f.semaforoSentinel, entidades: f.entidades, calificacion: f.calificacion, pctNormal: f.pctNormal,
       deudaVencida: f.deudaVencida, docsImpagos: f.docsImpagos
     }));
   }
@@ -353,6 +365,7 @@
     const rucRow = cr.RUC || null;
     const semValor = dniRow ? dniRow.semaforoValor : (ultima ? ultima.semaforoValor : null);
     const sinDeuda = dniRow ? !dniRow.deudaTotal : false;
+    const califActual = ultima ? (ultima.pctNormal === 100 ? 'NORMAL' : (ultima.calificacion || null)) : null;
 
     let maxDeuda = null;
     for (const f of filas) if (f.deuda !== null && (!maxDeuda || f.deuda > maxDeuda.monto)) maxDeuda = { monto: f.deuda, fecha: f.fecha, etiqueta: f.etiqueta, entidades: f.entidades };
@@ -363,7 +376,7 @@
     const peorActual = vigentes.map(e => e.calificacion).filter(c => ORDEN_CALIF.includes(c))
       .sort((a, b) => ORDEN_CALIF.indexOf(b) - ORDEN_CALIF.indexOf(a))[0] || null;
 
-    return {
+    const cliente = {
       fuente: 'Sentinel · Reporte de Crédito (Experian)',
       formato: 'EXPERIAN',
       nombre: cab.nombre || su.razonSocial,
@@ -376,7 +389,8 @@
       score: cab.score,
       scoreTexto: cab.scoreTexto,
       semaforoValor: semValor,
-      semaforo: colorSemaforo(semValor, sinDeuda),
+      semaforoSentinel: colorSemaforo(semValor, sinDeuda),
+      semaforo: null, // se completa abajo con la calificación SBS
       numEntidades: ultima ? ultima.entidades : (vigentes.length || null),
       numEntidadesEstimado: !ultima,
       maxEntidades,
@@ -394,7 +408,7 @@
       reportesNegativos: ultima ? ultima.reportesNegativos : null,
       deudorAlimentario: pd.deudorAlimentario,
       porcentajeNormal: ultima ? ultima.pctNormal : null,
-      calificacion: ultima ? (ultima.pctNormal === 100 ? 'NORMAL' : (ultima.calificacion || peorActual)) : peorActual,
+      calificacion: califActual || peorActual,
       endeudamientoMaximo: maxDeuda,
       ingresoEstimado: ingresoEstimado(lineasN),
       indicadores: indicadores(lineasN),
@@ -421,7 +435,9 @@
         actividad: !!su.actividad, inicioActividades: !!su.inicioActividades
       }
     };
+    cliente.semaforo = semaforoDeCalificacion(cliente.calificacion, sinDeuda && !cliente.calificacion);
+    return cliente;
   }
 
-  return { esExperian, analizar, colorSemaforo, norm };
+  return { esExperian, analizar, colorSemaforo, semaforoDeCalificacion, SEMAFORO_CALIF, norm };
 });

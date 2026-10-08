@@ -130,7 +130,7 @@
     for (const m of hist) {
       if (m.semaforo && m.semaforo !== 'VERDE' && m.semaforo !== 'GRIS') r.mesesSemaforoNoVerde++;
       if (m.semaforo === 'AMARILLO') r.mesesAmarillo++;
-      if (m.semaforo === 'ROJO') r.mesesRojo++;
+      if (['NARANJA', 'ROJO', 'NEGRO'].includes(m.semaforo)) r.mesesRojo++;
     }
     const califs = [c.calificacion, ...hist.map(m => m.calificacion), ...(c.detalleEntidades || []).map(e => e.calificacion)]
       .filter(x => ORDEN_CALIF.includes(x));
@@ -143,8 +143,10 @@
     const a = [];
     const add = (nivel, texto) => a.push({ nivel, texto });
     if (c.score === null || c.score === undefined) add('info', 'No se encontró el score en el reporte. Revísalo y corrígelo manualmente.');
-    if (c.semaforo === 'ROJO') add('alto', 'Semáforo actual en ROJO: deudas con atraso significativo.');
-    else if (c.semaforo === 'AMARILLO') add('medio', 'Semáforo actual en AMARILLO: deudas con poco atraso.');
+    const SEM_ALERTA = { AMARILLO: ['medio', 'CPP (con problemas potenciales)'], NARANJA: ['alto', 'Dudoso'], ROJO: ['alto', 'Deficiente'], NEGRO: ['alto', 'Pérdida'] };
+    if (SEM_ALERTA[c.semaforo]) add(SEM_ALERTA[c.semaforo][0], `Semáforo actual en ${c.semaforo}: calificación ${SEM_ALERTA[c.semaforo][1]}.`);
+    if (c.semaforoSentinel === 'ROJO') add('alto', 'Semáforo de riesgo Sentinel en rojo: deudas con atraso significativo.');
+    else if (c.semaforoSentinel === 'AMARILLO') add('medio', 'Semáforo de riesgo Sentinel en amarillo: deudas con poco atraso.');
     if (deuda.peorCalificacion && deuda.peorCalificacion !== 'NORMAL') add(deuda.peorCalificacion === 'CPP' ? 'medio' : 'alto', `Registra calificación ${deuda.peorCalificacion} en el periodo.`);
     if (c.porcentajeNormal !== null && c.porcentajeNormal !== undefined && c.porcentajeNormal < 100) add('alto', `Solo el ${c.porcentajeNormal}% de su deuda está en calificación Normal.`);
     if (c.deudaVencida > 0) add('alto', `Deuda vencida en el sistema financiero: ${S(c.deudaVencida)}.`);
@@ -157,7 +159,7 @@
     if (c.reportesNegativos > 0) add('medio', `${c.reportesNegativos} reporte(s) negativo(s) de otras fuentes.`);
     if (c.deudaCastigada > 0 || (c.menciones && c.menciones.castigo)) add('alto', 'El reporte menciona deuda castigada.');
     if (c.deudaJudicial > 0 || (c.menciones && c.menciones.judicial)) add('alto', 'El reporte menciona cobranza judicial.');
-    if (deuda.mesesRojo > 0) add('medio', `${deuda.mesesRojo} mes(es) con semáforo rojo en el historial.`);
+    if (deuda.mesesRojo > 0) add('alto', `${deuda.mesesRojo} mes(es) con calificación Deficiente, Dudoso o Pérdida en el historial.`);
     if (c.numEntidades !== null && c.numEntidades >= 4) add('medio', `Reportado por ${c.numEntidades} entidades: posible sobreendeudamiento.`);
     for (const e of deuda.eventos.filter(x => x.tipo === 'SUBE').slice(-2)) add('info', e.texto + '.');
     if (deuda.yaNoReportan.length) add('info', `Ya no reporta deuda con: ${deuda.yaNoReportan.map(e => e.entidad).join(', ')} (últimos 6 meses).`);

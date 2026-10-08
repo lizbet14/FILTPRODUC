@@ -46,7 +46,7 @@
   }
 
   /** Aplana cliente + análisis en los campos que usan las reglas. */
-  function hechos(cliente, analisis, tipoCliente) {
+  function hechos(cliente, analisis, tipoCliente, vivienda) {
     const cp = cajaPiura(cliente);
     const ciiu = cliente.ciiu ? String(cliente.ciiu).padStart(4, '0') : null;
     const sinDeuda = cliente.numEntidades === 0;
@@ -57,6 +57,7 @@
     const nEnt = cliente.numEntidades;
     return {
       tipoCliente,
+      vivienda: vivienda || null,
       score: cliente.score ?? null,
       semaforo: cliente.semaforo ?? null,
       numEntidades: nEnt ?? null,
@@ -108,12 +109,13 @@
   /**
    * @param {object} cliente
    * @param {object} analisis
-   * @param {object} opciones { tipoCliente, region, hoy }
+   * @param {object} opciones { tipoCliente, vivienda, region, hoy }
    */
   function evaluar(cliente, analisis, opciones = {}) {
     const tipoCliente = opciones.tipoCliente || sugerirTipoCliente(cliente).tipo;
     const hoy = opciones.hoy || new Date().toISOString().slice(0, 10);
-    const h = hechos(cliente, analisis, tipoCliente);
+    const vivienda = opciones.vivienda || null;
+    const h = hechos(cliente, analisis, tipoCliente, vivienda);
     const cat = Campanas.catalogo(opciones.region || Campanas.CONFIG.region);
     const orden = { CALIFICA: 0, REVISAR: 1, NO_CALIFICA: 2 };
 
@@ -131,7 +133,13 @@
       }
       const estado = detalle.some(d => d.cumple === false) ? 'NO_CALIFICA'
         : detalle.some(d => d.cumple === null) ? 'REVISAR' : 'CALIFICA';
-      return { producto: p, estado, detalle, tramo: tramoPara(p, h.score), verificar: p.verificar || [] };
+      let tramo = tramoPara(p, h.score);
+      let nota = null;
+      if (vivienda === 'ALQUILADA' && p.siAlquilada) {
+        nota = p.siAlquilada.nota;
+        if (tramo) tramo = { ...tramo, montoMax: Math.min(tramo.montoMax, p.siAlquilada.montoMax) };
+      }
+      return { producto: p, estado, detalle, tramo, nota, verificar: p.verificar || [] };
     }).sort((a, b) => (orden[a.estado] - orden[b.estado]) || ((b.tramo ? b.tramo.montoMax : 0) - (a.tramo ? a.tramo.montoMax : 0)));
   }
 
