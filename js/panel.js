@@ -57,7 +57,7 @@
         const esUlt = i === historial.length - 1;
         const esMax = !maxMarcado && h.deuda === max;
         if (esMax) maxMarcado = true;
-        s += `<rect x="${cx - bw / 2}" y="${yy}" width="${bw}" height="${Math.max(1, H - mB - yy)}" rx="3" fill="${esMax ? 'var(--tinta)' : 'var(--rojo)'}" opacity="${esUlt || esMax ? 1 : 0.5}"><title>${esc(h.etiqueta)}: ${soles(h.deuda)}${h.entidades !== null && h.entidades !== undefined ? ' · ' + h.entidades + ' entidad(es)' : ''}${h.calificacion ? ' · ' + h.calificacion : ''}</title></rect>`;
+        s += `<rect x="${cx - bw / 2}" y="${yy}" width="${bw}" height="${Math.max(1, H - mB - yy)}" rx="3" fill="${esMax ? 'var(--acento)' : 'var(--marca)'}" opacity="${esUlt || esMax ? 1 : 0.45}"><title>${esc(h.etiqueta)}: ${soles(h.deuda)}${h.entidades !== null && h.entidades !== undefined ? ' · ' + h.entidades + ' entidad(es)' : ''}${h.calificacion ? ' · ' + h.calificacion : ''}</title></rect>`;
         if (conEntidades && h.entidades !== null && h.entidades !== undefined) s += `<text x="${cx}" y="${yy - 5}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--tinta-2)">${h.entidades}</text>`;
       }
       const color = { VERDE: 'var(--verde)', AMARILLO: 'var(--ambar)', ROJO: 'var(--rojo)', GRIS: 'var(--gris)' }[h.semaforo] || 'var(--linea)';
