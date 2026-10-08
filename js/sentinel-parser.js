@@ -260,6 +260,12 @@
     const lineas = Array.isArray(entrada) ? entrada : String(entrada).split(/\r?\n/);
     const lineasN = lineas.map(norm);
     const textoN = lineasN.join('\n');
+
+    // Formato real "Reporte de Crédito" Sentinel/Experian → lector especializado
+    const Experian = (typeof SentinelExperian !== 'undefined' && SentinelExperian) ||
+      (typeof require === 'function' ? (() => { try { return require('./sentinel-experian.js'); } catch (e) { return null; } })() : null);
+    if (Experian && Experian.esExperian(textoN)) return Experian.analizar(lineas);
+
     const hallados = {};
     const val = (campo, etiquetas, validador) => {
       const r = buscar(lineasN, etiquetas, validador);

@@ -22,7 +22,8 @@
  *   score, semaforo, numEntidades, deudaTotal, deudaVencida, peorCalificacion,
  *   perfil (NEGOCIO | SERVICIOS | EMPRESA | SIN_RUC | INDETERMINADO),
  *   tieneRuc, rucActivo, antiguedadMeses, tendenciaDeuda (SUBE | BAJA | ESTABLE | NUEVO),
- *   mesesSemaforoNoVerde, mesesRojo
+ *   mesesSemaforoNoVerde, mesesRojo, deudaSBS, deudaMaxima, maxEntidades,
+ *   porcentajeNormal, docsImpagos, deudaTributaria, protestos, ingresoEstimadoMin
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -48,7 +49,15 @@
       antiguedadMeses: analisis.ruc.antiguedadMeses,
       tendenciaDeuda: analisis.deuda.tendencia,
       mesesSemaforoNoVerde: analisis.deuda.mesesSemaforoNoVerde,
-      mesesRojo: analisis.deuda.mesesRojo
+      mesesRojo: analisis.deuda.mesesRojo,
+      deudaSBS: cliente.deudaSBS ?? null,
+      deudaMaxima: analisis.deuda.maximo,
+      maxEntidades: analisis.deuda.entidadesMax,
+      porcentajeNormal: cliente.porcentajeNormal ?? null,
+      docsImpagos: cliente.docsImpagos ?? null,
+      deudaTributaria: cliente.deudaTributaria ?? null,
+      protestos: cliente.protestos ?? null,
+      ingresoEstimadoMin: cliente.ingresoEstimado ? cliente.ingresoEstimado.min : null
     };
   }
 

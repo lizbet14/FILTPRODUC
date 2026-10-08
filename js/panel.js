@@ -7,11 +7,16 @@
   // ---------- formato ----------
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const soles = n => n === null || n === undefined ? '—' : 'S/ ' + Number(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const solesCorto = n => n >= 1000 ? 'S/ ' + (n / 1000).toLocaleString('es-PE', { maximumFractionDigits: 1 }) + 'k' : 'S/ ' + Math.round(n);
+  const solesCorto = n => n >= 1000000 ? 'S/ ' + (n / 1e6).toLocaleString('es-PE', { maximumFractionDigits: 1 }) + 'M' : n >= 1000 ? 'S/ ' + (n / 1000).toLocaleString('es-PE', { maximumFractionDigits: 1 }) + 'k' : 'S/ ' + Math.round(n);
   const fecha = iso => { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
   const v = x => (x === null || x === undefined || x === '') ? '—' : esc(x);
+  const pct = x => x === null || x === undefined ? '—' : (x > 0 ? '+' : '') + (x * 100).toFixed(0) + '%';
   const antig = m => m === null || m === undefined ? '—' : (m >= 12 ? `${Math.floor(m / 12)} año(s)${m % 12 ? ' y ' + (m % 12) + ' mes(es)' : ''}` : `${m} mes(es)`);
-  const CALIF_TXT = { NORMAL: 'Normal', CPP: 'CPP', DEFICIENTE: 'Deficiente', DUDOSO: 'Dudoso', PERDIDA: 'Pérdida' };
+  const capital = s => s ? s.charAt(0) + s.slice(1).toLowerCase() : '';
+  const CALIF_TXT = { NORMAL: 'Normal', CPP: 'CPP', DEFICIENTE: 'Deficiente', DUDOSO: 'Dudoso', PERDIDA: 'Pérdida', 'SIN CALIFICACION': 'Sin calif.' };
+  const SEM_TXT = { VERDE: 'Sin deudas vencidas', AMARILLO: 'Deudas con poco atraso', ROJO: 'Deudas con atraso significativo', GRIS: 'No registra información de deudas' };
+  const NOMBRE_ENTIDAD = { MIBCO: 'MIBANCO' };
+  const ESTADO_ENT = { CON_DEUDA: ['Con deuda', 'e-CALIFICA'], SIN_SALDO: ['Sin saldo', 'e-REVISAR'], YA_NO_REPORTA: ['Ya no reporta', 'e-INFO'] };
   const NOMBRES_CAMPOS = {
     nombre: 'Nombre', fechaReporte: 'Fecha del reporte', score: 'Score', semaforo: 'Semáforo', numEntidades: 'N° de entidades',
     deudaTotal: 'Deuda total', deudaVencida: 'Deuda vencida', calificacion: 'Calificación SBS', tipoContribuyente: 'Tipo de contribuyente',
@@ -27,36 +32,85 @@
   };
 
   // ---------- gráfico de historial ----------
-  function grafico(historial) {
-    const datos = historial.filter(h => h.deuda !== null);
+  function grafico(historial, maximo) {
+    const datos = historial.filter(h => h.deuda !== null && h.deuda !== undefined);
     if (datos.length < 2) return '<div class="vacio">El reporte no trae suficiente historial mensual para graficar.</div>';
-    const W = 680, H = 240, mL = 56, mR = 8, mT = 14, mB = 46;
+    const W = 720, H = 260, mL = 58, mR = 8, mT = 24, mB = 46;
     const max = Math.max(...datos.map(d => d.deuda)) || 1;
     const paso = Math.pow(10, Math.floor(Math.log10(max)));
     const tope = Math.ceil(max / paso) * paso;
     const ancho = (W - mL - mR) / historial.length;
     const y = val => mT + (H - mT - mB) * (1 - val / tope);
-    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Deuda total por mes">`;
+    const conEntidades = historial.some(h => h.entidades !== null && h.entidades !== undefined);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Deuda SBS por mes">`;
     for (let i = 0; i <= 4; i++) {
       const val = tope * i / 4, yy = y(val);
       s += `<line x1="${mL}" x2="${W - mR}" y1="${yy}" y2="${yy}" stroke="var(--linea)" stroke-width="1"/>`;
       s += `<text x="${mL - 8}" y="${yy + 4}" text-anchor="end" font-size="11" fill="var(--tinta-3)">${solesCorto(val)}</text>`;
     }
+    let maxMarcado = false;
     historial.forEach((h, i) => {
-      const x = mL + i * ancho;
-      const bw = Math.min(34, ancho * 0.62);
-      const cx = x + ancho / 2;
-      if (h.deuda !== null) {
+      const cx = mL + i * ancho + ancho / 2;
+      const bw = Math.min(30, ancho * 0.66);
+      if (h.deuda !== null && h.deuda !== undefined) {
         const yy = y(h.deuda);
-        s += `<rect x="${cx - bw / 2}" y="${yy}" width="${bw}" height="${H - mB - yy}" rx="4" fill="var(--rojo)" opacity="${i === historial.length - 1 ? 1 : 0.55}"><title>${esc(h.etiqueta)}: ${soles(h.deuda)}${h.calificacion ? ' · ' + h.calificacion : ''}</title></rect>`;
+        const esUlt = i === historial.length - 1;
+        const esMax = !maxMarcado && h.deuda === max;
+        if (esMax) maxMarcado = true;
+        s += `<rect x="${cx - bw / 2}" y="${yy}" width="${bw}" height="${Math.max(1, H - mB - yy)}" rx="3" fill="${esMax ? 'var(--tinta)' : 'var(--rojo)'}" opacity="${esUlt || esMax ? 1 : 0.5}"><title>${esc(h.etiqueta)}: ${soles(h.deuda)}${h.entidades !== null && h.entidades !== undefined ? ' · ' + h.entidades + ' entidad(es)' : ''}${h.calificacion ? ' · ' + h.calificacion : ''}</title></rect>`;
+        if (conEntidades && h.entidades !== null && h.entidades !== undefined) s += `<text x="${cx}" y="${yy - 5}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--tinta-2)">${h.entidades}</text>`;
       }
       const color = { VERDE: 'var(--verde)', AMARILLO: 'var(--ambar)', ROJO: 'var(--rojo)', GRIS: 'var(--gris)' }[h.semaforo] || 'var(--linea)';
-      s += `<circle cx="${cx}" cy="${H - mB + 12}" r="4.5" fill="${color}"><title>Semáforo: ${h.semaforo || 'sin dato'}</title></circle>`;
+      s += `<circle cx="${cx}" cy="${H - mB + 11}" r="4.5" fill="${color}"><title>Semáforo ${esc(h.etiqueta)}: ${h.semaforo || 'sin dato'}${h.semaforoValor !== undefined && h.semaforoValor !== null ? ' (' + h.semaforoValor.toFixed(3) + ')' : ''}</title></circle>`;
       const [mes, anio] = h.etiqueta.split(' ');
-      s += `<text x="${cx}" y="${H - mB + 30}" text-anchor="middle" font-size="11" fill="var(--tinta-2)">${esc(mes)}</text>`;
-      if (i === 0 || mes === 'Ene') s += `<text x="${cx}" y="${H - mB + 43}" text-anchor="middle" font-size="10" fill="var(--tinta-3)">${esc(anio)}</text>`;
+      s += `<text x="${cx}" y="${H - mB + 29}" text-anchor="middle" font-size="10" fill="var(--tinta-2)">${esc(mes)}</text>`;
+      if (i === 0 || mes === 'Ene') s += `<text x="${cx}" y="${H - mB + 42}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--tinta-3)">${esc(anio)}</text>`;
     });
     return s + '</svg>';
+  }
+
+  function tablaPosicion(filas) {
+    if (!filas || !filas.length) return '';
+    return `<details class="tecnico sub-detalle"><summary>Ver posición histórica completa (${filas.length} registros)</summary>
+      <div class="tabla-scroll"><table class="compacta">
+        <thead><tr><th>Fecha</th><th>Sem.</th><th class="der">Entid.</th><th class="der">Deuda SBS</th><th class="der">% Normal</th><th class="der">Vencida</th><th class="der">Doc. impagos</th></tr></thead>
+        <tbody>${filas.map(f => `<tr>
+          <td class="num">${fecha(f.fecha)}</td>
+          <td><span class="luz ${f.semaforo}" title="${f.semaforoValor !== null ? f.semaforoValor.toFixed(3) : ''}"></span></td>
+          <td class="der num">${v(f.entidades)}</td><td class="der num">${soles(f.deuda)}</td>
+          <td class="der num">${f.pctNormal === null ? (f.calificacion ? CALIF_TXT[f.calificacion] || f.calificacion : '—') : f.pctNormal.toFixed(0) + '%'}</td>
+          <td class="der num">${f.deudaVencida ? soles(f.deudaVencida) : '—'}</td>
+          <td class="der num">${f.docsImpagos ? soles(f.docsImpagos) : '—'}</td></tr>`).join('')}</tbody>
+      </table></div></details>`;
+  }
+
+  function tablaEntidades(c) {
+    const ents = c.detalleEntidades || [];
+    if (!ents.length) return '<div class="vacio">No se identificó el detalle por entidad en el reporte.</div>';
+    const maxEnt = Math.max(1, ...ents.map(e => Math.max(e.deuda || 0, e.maxAnterior || 0)));
+    const conDocs = new Set(ents.map(e => e.documento)).size > 1;
+    return `<div class="tabla-scroll"><table>
+      <thead><tr><th>Entidad</th><th>Calif.</th><th class="der">Deuda actual</th><th class="der col-opc">Máx. últ. 6m</th><th class="centro">Estado</th></tr></thead>
+      <tbody>${ents.map(e => {
+        const [txt, cls] = ESTADO_ENT[e.estado] || ['—', ''];
+        return `<tr>
+          <td><b>${esc(NOMBRE_ENTIDAD[e.entidad] || e.entidad)}</b>${conDocs ? ` <small class="doc-tag">${e.documento}</small>` : ''}
+            ${e.deuda > 0 ? `<div class="barra-mini" style="width:${Math.max(3, e.deuda / maxEnt * 100)}%"></div>` : ''}
+            ${e.diasVencido ? `<small class="atraso">${e.diasVencido} días de atraso</small>` : ''}</td>
+          <td>${e.calificacion ? `<span class="calif-badge ${e.calificacion}">${CALIF_TXT[e.calificacion] || e.calificacion}</span>` : '—'}</td>
+          <td class="der num">${e.vigente === false ? '—' : soles(e.deuda)}</td>
+          <td class="der num tinta-3 col-opc">${e.maxAnterior ? soles(e.maxAnterior) : '—'}</td>
+          <td class="centro"><span class="estado ${cls}">${txt}</span></td></tr>`;
+      }).join('')}</tbody></table></div>`;
+  }
+
+  function tablaLineas(c) {
+    const ls = c.lineasCredito || [];
+    if (!ls.length) return '';
+    return `<h3 class="subtitulo">Líneas de crédito</h3>
+      <table class="compacta"><thead><tr><th>Institución</th><th>Tipo</th><th class="der">Aprobada</th><th class="der">Utilizada</th><th class="der">Disponible</th></tr></thead>
+      <tbody>${ls.map(l => `<tr><td>${esc(l.institucion)}</td><td>${esc(l.tipo === 'TCO' ? 'Tarjeta consumo' : l.tipo)}</td>
+        <td class="der num">${soles(l.aprobada)}</td><td class="der num">${soles(l.utilizada)}</td><td class="der num">${soles(l.noUtilizada)}</td></tr>`).join('')}</tbody></table>`;
   }
 
   // ---------- render ----------
@@ -66,7 +120,7 @@
     const evals = Productos.evaluar(c, a);
     const r = a.ruc, d = a.deuda;
     const faltan = Object.keys(NOMBRES_CAMPOS).filter(k => c.camposHallados && c.camposHallados[k] === false && (c[k] === null || c[k] === undefined));
-    const maxEnt = Math.max(1, ...(c.detalleEntidades || []).map(e => e.deuda || 0));
+    const otrasDeudas = c.deudaSBS !== null && c.deudaSBS !== undefined && c.deudaTotal > c.deudaSBS ? +(c.deudaTotal - c.deudaSBS).toFixed(2) : 0;
 
     panel.innerHTML = `
       <section class="cabecera-cliente">
@@ -75,47 +129,51 @@
           <div class="ids">
             <span>DNI <b class="num">${v(c.dni)}</b></span>
             <span>RUC <b class="num">${v(c.ruc)}</b></span>
+            ${c.nombreComercial ? `<span>Negocio <b>${esc(c.nombreComercial)}</b></span>` : ''}
           </div>
         </div>
-        <div class="fuente">Reporte ${esc(c.fuente || 'Sentinel')} del <b>${fecha(c.fechaReporte)}</b><br>${esc(reg.archivo || '')}${reg.editado ? ' · <b>corregido manualmente</b>' : ''}</div>
+        <div class="fuente">${esc(c.fuente || 'Sentinel')}<br>Información al <b>${fecha(c.fechaReporte)}</b>${c.fechaCreacion ? ` · consultado el ${fecha(c.fechaCreacion)}` : ''}${reg.editado ? '<br><b>Corregido manualmente</b>' : ''}</div>
       </section>
 
       <section class="kpis">
-        <div class="kpi destacado"><div class="etq">Score</div><div class="valor num">${v(c.score)}</div><div class="sub">Sentinel</div></div>
-        <div class="kpi"><div class="etq">Semáforo actual</div><div class="valor"><span class="semaforo"><span class="luz ${c.semaforo}"></span>${c.semaforo ? c.semaforo.charAt(0) + c.semaforo.slice(1).toLowerCase() : '—'}</span></div><div class="sub">${d.mesesSemaforoNoVerde ? d.mesesSemaforoNoVerde + ' mes(es) no verde' : 'Historial en verde'}</div></div>
-        <div class="kpi"><div class="etq">Entidades (IFIs)</div><div class="valor num">${v(c.numEntidades)}</div><div class="sub">${c.numEntidadesEstimado ? '<span class="estimado">ESTIMADO DEL DETALLE</span>' : 'que lo reportan a la fecha'}</div></div>
-        <div class="kpi"><div class="etq">Deuda total</div><div class="valor num">${soles(c.deudaTotal)}</div><div class="sub">Vencida: ${soles(c.deudaVencida)}</div></div>
-        <div class="kpi"><div class="etq">Calificación SBS</div><div class="valor">${c.calificacion ? CALIF_TXT[c.calificacion] : '—'}</div><div class="sub">${d.peorCalificacion && d.peorCalificacion !== c.calificacion ? 'Peor en el periodo: ' + CALIF_TXT[d.peorCalificacion] : 'en el reporte actual'}</div></div>
+        <div class="kpi destacado"><div class="etq">Score Experian</div><div class="valor num">${v(c.score)}</div><div class="sub">${esc(c.scoreTexto || 'Sentinel')}</div></div>
+        <div class="kpi"><div class="etq">Semáforo actual</div><div class="valor"><span class="semaforo"><span class="luz ${c.semaforo}"></span>${c.semaforo ? capital(c.semaforo) : '—'}</span></div>
+          <div class="sub">${SEM_TXT[c.semaforo] || ''}${c.semaforoValor !== null && c.semaforoValor !== undefined ? ` · ${Number(c.semaforoValor).toFixed(3)}` : ''}</div></div>
+        <div class="kpi"><div class="etq">Entidades que lo reportan</div><div class="valor num">${v(c.numEntidades)}</div>
+          <div class="sub">${c.numEntidadesEstimado ? '<span class="estimado">ESTIMADO DEL DETALLE</span>' : d.entidadesMax ? `Máximo en 24 meses: <b>${d.entidadesMax}</b>` : 'a la fecha'}</div></div>
+        <div class="kpi"><div class="etq">Deuda total actual</div><div class="valor num">${soles(c.deudaTotal)}</div>
+          <div class="sub">${otrasDeudas ? `SBS ${soles(c.deudaSBS)} + otros ${soles(otrasDeudas)}` : `Vencida: ${soles(c.deudaVencida)}`}</div></div>
+        <div class="kpi"><div class="etq">Endeudamiento máximo</div><div class="valor num">${soles(d.maximo)}</div>
+          <div class="sub">${d.fechaMaximo ? `${esc(d.fechaMaximo)}` : ''}${d.desdeMaximo !== null && d.desdeMaximo < -0.01 ? ` · hoy ${(Math.abs(d.desdeMaximo) * 100).toFixed(0)}% menos` : d.desdeMaximo !== null && Math.abs(d.desdeMaximo) <= 0.01 ? ' · es su deuda actual' : ''}${d.meses ? ` · últimos ${d.meses} meses` : ''}</div></div>
+        <div class="kpi"><div class="etq">Calificación SBS</div><div class="valor">${c.calificacion ? CALIF_TXT[c.calificacion] || c.calificacion : '—'}</div>
+          <div class="sub">${c.porcentajeNormal !== null && c.porcentajeNormal !== undefined ? `${c.porcentajeNormal}% de la deuda en Normal` : ''}${d.peorCalificacion && d.peorCalificacion !== c.calificacion ? ` · peor en el periodo: ${CALIF_TXT[d.peorCalificacion]}` : ''}</div></div>
       </section>
 
       <div class="rejilla">
         <div class="columna">
           <section class="tarjeta">
             <h2>Historial de endeudamiento <span class="tendencia t-${d.tendencia}">${esc(d.tendenciaTexto)}</span></h2>
-            <div class="grafico">${grafico(c.historial || [])}</div>
+            <div class="grafico">${grafico(c.historial || [], d.maximo)}</div>
             <div class="leyenda">
               <span><span class="luz VERDE"></span>Verde</span><span><span class="luz AMARILLO"></span>Amarillo</span>
               <span><span class="luz ROJO"></span>Rojo</span><span><span class="luz GRIS"></span>Sin información</span>
+              <span><span class="cuadro-max"></span>Endeudamiento máximo</span>
+              ${(c.historial || []).some(h => h.entidades !== null && h.entidades !== undefined) ? '<span><b>N°</b>&nbsp;sobre la barra = entidades</span>' : ''}
             </div>
             <div class="metricas">
-              <div class="metrica"><div class="etq">Variación</div><div class="v num">${d.variacion === null ? '—' : (d.variacion > 0 ? '+' : '') + (d.variacion * 100).toFixed(0) + '%'}</div></div>
-              <div class="metrica"><div class="etq">Deuda máxima</div><div class="v num">${soles(d.maximo)}</div></div>
-              <div class="metrica"><div class="etq">Promedio</div><div class="v num">${soles(d.promedio)}</div></div>
-              <div class="metrica"><div class="etq">Meses leídos</div><div class="v num">${d.meses}</div></div>
+              <div class="metrica"><div class="etq">Variación 12 meses</div><div class="v num">${pct(d.variacion)}</div></div>
+              <div class="metrica"><div class="etq">Deuda promedio</div><div class="v num">${soles(d.promedio)}</div></div>
+              <div class="metrica"><div class="etq">Meses no verdes</div><div class="v num">${d.mesesSemaforoNoVerde} <small>de ${d.meses}</small></div></div>
+              <div class="metrica"><div class="etq">Entidades hoy / máx.</div><div class="v num">${v(d.entidadesActual)} / ${v(d.entidadesMax)}</div></div>
             </div>
+            ${d.eventos.length ? `<ul class="eventos">${d.eventos.slice(-5).reverse().map(e => `<li class="ev-${e.tipo}">${esc(e.texto)}</li>`).join('')}</ul>` : ''}
+            ${tablaPosicion(c.posicionHistorica)}
           </section>
 
           <section class="tarjeta">
-            <h2>Detalle por entidad <small>${(c.detalleEntidades || []).length} encontradas</small></h2>
-            ${(c.detalleEntidades || []).length ? `
-            <table>
-              <thead><tr><th>Entidad</th><th>Calificación</th><th class="der">Deuda</th></tr></thead>
-              <tbody>${c.detalleEntidades.map(e => `
-                <tr><td>${esc(e.entidad)}<div class="barra-mini" style="width:${Math.max(4, (e.deuda || 0) / maxEnt * 100)}%"></div></td>
-                <td>${e.calificacion ? `<span class="calif-badge ${e.calificacion}">${CALIF_TXT[e.calificacion]}</span>` : '—'}</td>
-                <td class="der num">${soles(e.deuda)}</td></tr>`).join('')}
-              </tbody>
-            </table>` : '<div class="vacio">No se identificó el detalle por entidad en el reporte.</div>'}
+            <h2>Detalle por entidad <small>${c.periodoDetalle ? 'Deuda a ' + esc(capital(c.periodoDetalle.split(' ')[0])) + ' ' + esc(c.periodoDetalle.split(' ')[1]) : (c.detalleEntidades || []).length + ' encontradas'}</small></h2>
+            ${tablaEntidades(c)}
+            ${tablaLineas(c)}
           </section>
         </div>
 
@@ -125,13 +183,25 @@
             <div class="perfil"><div class="perfil-icono">${ICONOS[r.perfil] || ''}</div><div><b>${esc(r.perfilTexto)}</b><span>${esc(r.tipoPersona || 'Sin RUC registrado')}</span></div></div>
             <dl class="datos">
               <dt>Tipo contribuyente</dt><dd>${v(c.tipoContribuyente)}</dd>
+              ${c.nombreComercial ? `<dt>Nombre comercial</dt><dd>${esc(c.nombreComercial)}</dd>` : ''}
               <dt>Estado / condición</dt><dd>${v(c.estadoRuc)} / ${v(c.condicionRuc)}</dd>
-              <dt>Actividad</dt><dd>${v(c.actividad)}</dd>
+              <dt>Actividad</dt><dd>${c.ciiu ? `<span class="ciiu">${esc(c.ciiu)}</span> ` : ''}${v(c.actividad)}</dd>
               <dt>Inicio actividades</dt><dd>${fecha(c.inicioActividades)}</dd>
-              <dt>Antigüedad</dt><dd>${antig(r.antiguedadMeses)}</dd>
+              <dt>Antigüedad del RUC</dt><dd>${antig(r.antiguedadMeses)}</dd>
             </dl>
             <div class="nota">${esc(r.motivo)}</div>
           </section>
+
+          ${c.ingresoEstimado || (c.indicadores || []).length ? `
+          <section class="tarjeta">
+            <h2>Otros datos del reporte</h2>
+            <dl class="datos">
+              ${c.ingresoEstimado ? `<dt>Ingreso estimado</dt><dd>${esc(c.ingresoEstimado.texto)}</dd>` : ''}
+              ${c.deudaRuc !== null && c.deudaRuc !== undefined ? `<dt>Deuda con el RUC</dt><dd>${soles(c.deudaRuc)}</dd>` : ''}
+              ${c.docsImpagos ? `<dt>Documentos impagos</dt><dd>${soles(c.docsImpagos)}</dd>` : ''}
+            </dl>
+            ${(c.indicadores || []).length ? `<div class="chips" style="margin-top:12px">${c.indicadores.map(i => `<span class="chip">${esc(capital(i))}</span>`).join('')}</div>` : ''}
+          </section>` : ''}
 
           <section class="tarjeta">
             <h2>Alertas para el asesor</h2>
@@ -144,7 +214,7 @@
             ${evals.length ? evals.map(ev => `
               <div class="producto">
                 <div class="producto-cab"><b>${esc(ev.producto.nombre)}</b><span class="estado e-${ev.estado}">${{ CALIFICA: 'Califica', REVISAR: 'Revisar', NO_CALIFICA: 'No califica' }[ev.estado]}</span></div>
-                ${ev.producto.descripcion ? `<div class="sub" style="font-size:13px;color:var(--tinta-2)">${esc(ev.producto.descripcion)}</div>` : ''}
+                ${ev.producto.descripcion ? `<div style="font-size:13px;color:var(--tinta-2)">${esc(ev.producto.descripcion)}</div>` : ''}
                 <ul class="requisitos">${ev.detalle.map(q => `<li class="${q.cumple === true ? 'ok' : q.cumple === false ? 'no' : 'falta'}">${esc(q.texto)}</li>`).join('')}</ul>
               </div>`).join('')
               : `<div class="vacio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
@@ -158,6 +228,8 @@
         ${faltan.length ? `<p style="font-size:13px;margin:10px 0 0">Datos que el lector no encontró:</p><div class="faltantes">${faltan.map(k => `<span>${NOMBRES_CAMPOS[k]}</span>`).join('')}</div>` : ''}
         <pre class="texto-pdf">${esc(reg.texto || '')}</pre>
       </details>`;
+    // En celular el gráfico se desliza: mostrar primero los meses más recientes
+    panel.querySelectorAll('.grafico').forEach(g => { g.scrollLeft = g.scrollWidth; });
   }
 
   // ---------- edición manual ----------
@@ -178,10 +250,11 @@
       for (const el of form.elements) {
         if (!el.name) continue;
         const t = el.value.trim();
-        let nuevo = t === '' ? null : (NUM.includes(el.name) ? Number(t) : (el.tagName === 'SELECT' || el.type === 'date' ? t : t.toUpperCase()));
+        const nuevo = t === '' ? null : (NUM.includes(el.name) ? Number(t) : (el.tagName === 'SELECT' || el.type === 'date' ? t : t.toUpperCase()));
         if (reg.cliente[el.name] !== nuevo) {
           reg.cliente[el.name] = nuevo;
           if (el.name === 'numEntidades') reg.cliente.numEntidadesEstimado = false;
+          if (el.name === 'semaforo') reg.cliente.semaforoValor = null;
           reg.editado = true;
         }
       }

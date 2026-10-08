@@ -112,7 +112,7 @@ button { font-family: inherit; }
 .ids span b { color: var(--tinta); font-weight: 700; }
 .fuente { font-size: 13px; color: var(--tinta-3); text-align: right; }
 
-.kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
 .kpi { background: var(--papel); border-radius: var(--radio); padding: 16px 18px; box-shadow: var(--sombra); min-width: 0; }
 .kpi .etq { font-size: 12px; text-transform: uppercase; letter-spacing: .7px; color: var(--tinta-3); font-weight: 700; }
 .kpi .valor { font-size: 28px; font-weight: 800; letter-spacing: -.5px; margin-top: 4px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -197,6 +197,25 @@ pre.texto-pdf { white-space: pre-wrap; font-size: 12px; background: var(--fondo)
 .faltantes span { font-size: 12px; background: var(--ambar-suave); color: var(--ambar); border-radius: 6px; padding: 2px 8px; font-weight: 700; }
 .estimado { font-size: 11px; color: var(--ambar); font-weight: 700; }
 
+/* ---------- tablas y detalles ---------- */
+.tabla-scroll { overflow-x: auto; }
+table.compacta { font-size: 13px; }
+table.compacta td { padding: 6px 8px 6px 0; }
+table.compacta .luz { width: 10px; height: 10px; }
+.subtitulo { font-size: 13px; text-transform: uppercase; letter-spacing: .7px; color: var(--tinta-3); margin: 18px 0 8px; }
+.doc-tag { font-size: 10px; font-weight: 800; color: var(--azul); background: var(--azul-suave); border-radius: 4px; padding: 1px 5px; }
+.atraso { display: block; font-size: 12px; color: var(--rojo); font-weight: 700; margin-top: 2px; }
+.tinta-3 { color: var(--tinta-3); }
+.e-INFO { background: var(--azul-suave); color: var(--azul); }
+.cuadro-max { width: 10px; height: 10px; border-radius: 2px; background: var(--tinta); display: inline-block; }
+.ciiu { font-size: 11px; font-weight: 800; background: var(--fondo); border: 1px solid var(--linea); border-radius: 4px; padding: 0 5px; color: var(--tinta-2); }
+.eventos { list-style: none; padding: 0; margin: 14px 0 0; font-size: 13px; }
+.eventos li { padding: 6px 10px; border-radius: 8px; margin-bottom: 6px; background: var(--fondo); color: var(--tinta-2); }
+.eventos li.ev-SUBE::before { content: '▲ '; color: var(--ambar); }
+.eventos li.ev-BAJA::before { content: '▼ '; color: var(--verde); }
+.sub-detalle { margin-top: 12px; }
+.metrica small { font-weight: 600; color: var(--tinta-3); font-size: 12px; }
+
 /* ---------- edición ---------- */
 dialog { border: 0; border-radius: 16px; padding: 0; max-width: 640px; width: calc(100% - 32px); background: var(--papel); color: var(--tinta); box-shadow: 0 20px 60px rgba(0, 0, 0, .25); }
 dialog::backdrop { background: rgba(20, 24, 30, .45); }
@@ -216,7 +235,6 @@ dialog::backdrop { background: rgba(20, 24, 30, .45); }
 
 @media (max-width: 960px) {
   .kpis { grid-template-columns: repeat(2, 1fr); }
-  .kpis .kpi:first-child { grid-column: 1 / -1; }
   .rejilla { grid-template-columns: 1fr; }
   .metricas { grid-template-columns: repeat(2, 1fr); }
 }
@@ -230,9 +248,12 @@ dialog::backdrop { background: rgba(20, 24, 30, .45); }
   .fuente { text-align: left; }
   .acciones .btn span { display: none; }
   .kpi .valor { font-size: 22px; white-space: normal; }
-  .grafico svg { min-width: 0; }
+  .grafico svg { min-width: 640px; }
+  .grafico::after { content: 'Desliza para ver todos los meses →'; display: block; font-size: 11px; color: var(--tinta-3); margin-top: 4px; }
+  .col-opc { display: none; }
 }
 td.der { white-space: nowrap; }
+th.centro, td.centro { text-align: center; padding-left: 12px; }
 @media print {
   .barra .acciones, details.tecnico, .ejemplo { display: none; }
   body { background: #fff; }

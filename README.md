@@ -4,6 +4,21 @@ Calificador de clientes para asesores de negocios de **Caja Piura**: se carga el
 
 🔗 **Web en línea:** https://lizbet14.github.io/FILTPRODUC/
 
+## Formato de reporte soportado
+
+Calibrado con el **"Reporte de Crédito" de Sentinel / Experian** (PDF descargado del sistema). Lee:
+
+- Score Experian y su texto ("Buen Puntaje"), semáforo (valor numérico → color con la regla del reporte)
+- Consulta Rápida: deuda total del DNI y del RUC
+- Indicadores ("Línea de Crédito", "Está Avalado") e ingreso estimado
+- Detalle de la deuda SBS/Microfinanzas por entidad (calificación, monto, días de atraso, entidades que ya no reportan)
+- Detalle de vencidos (documentos impagos), líneas de crédito
+- Información General SUNAT: tipo de contribuyente (con/sin negocio), nombre comercial, actividad (CIIU), inicio de actividades
+- Posición Histórica de 24 meses: entidades, deuda SBS, % normal, vencidos, impagos, deuda tributaria y laboral
+- Protestos y Deudores Alimentarios Morosos
+
+> ⚠️ El repositorio es público: **nunca subir reportes reales de clientes**. Para pruebas se usa `ejemplos/reporte-sentinel-ficticio.pdf` (datos inventados).
+
 ## Qué hace hoy
 
 1. **Carga del PDF** (`index.html`): arrastrar o elegir el reporte Sentinel. El PDF se lee **solo en el navegador** con pdf.js; no se sube a ningún servidor.
@@ -22,7 +37,8 @@ Calificador de clientes para asesores de negocios de **Caja Piura**: se carga el
 | `index.html`, `js/carga.js` | Página de carga del PDF |
 | `panel.html`, `js/panel.js` | Panel central de datos |
 | `js/pdf-texto.js` | Extrae el texto del PDF reconstruyendo las líneas |
-| `js/sentinel-parser.js` | Lee los datos del reporte Sentinel (etiquetas configurables en `ETIQUETAS`) |
+| `js/sentinel-experian.js` | Lector del formato real "Reporte de Crédito" Sentinel/Experian |
+| `js/sentinel-parser.js` | Detecta el formato; lector genérico de respaldo para otros formatos |
 | `js/analisis.js` | Perfil del RUC, análisis del historial de deuda y alertas |
 | `js/productos.js` | Catálogo de productos/campañas y motor de reglas |
 | `vendor/pdfjs/` | pdf.js (Mozilla, Apache-2.0) incluido para no depender de CDNs |
@@ -30,7 +46,7 @@ Calificador de clientes para asesores de negocios de **Caja Piura**: se carga el
 
 ## Próximos pasos
 
-- [ ] Calibrar el lector con un reporte Sentinel real (anonimizado).
+- [x] Calibrar el lector con reportes Sentinel reales (cliente con negocio y cliente sin negocio).
 - [ ] Cargar el catálogo de productos y campañas de Caja Piura con sus requisitos.
 - [ ] Mostrar a qué productos califica el cliente y por qué.
 

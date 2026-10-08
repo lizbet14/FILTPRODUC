@@ -1,0 +1,4 @@
+# Nunca subir reportes reales de clientes (el repositorio es público)
+reales/
+*.real.pdf
+privado/
