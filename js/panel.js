@@ -127,6 +127,8 @@
   };
   const TIPO_TXT = Object.fromEntries(TIPOS_CLIENTE);
   const VIVIENDAS = [['PROPIA', 'Propia'], ['FAMILIAR', 'Familiar'], ['ALQUILADA', 'Alquilada']];
+  const ACTIVIDADES = [['EMPRESARIAL', 'Empresarial'], ['CONSUMO', 'Consumo']];
+  const ACTIVIDAD_AYUDA = { EMPRESARIAL: 'Tiene negocio propio, con o sin RUC/RUS activo.', CONSUMO: 'Dependiente o independiente, sin negocio propio.' };
   const pctTxt = n => Number(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
 
   const sMonto = n => 'S/ ' + Number(n).toLocaleString('es-PE', { maximumFractionDigits: 0 });
@@ -179,6 +181,7 @@
         <div><span class="seg">${esc(p.segmento)} · ${esc(p.tipo)}</span><h3>${esc(p.nombre)}</h3></div>
         <span class="estado e-${ev.estado}">${ESTADO_TXT[ev.estado]}</span>
       </div>
+      ${ev.negocioSinRuc && ev.estado !== 'NO_CALIFICA' ? '<p class="nota-prod nota-info"><b>Negocio no registrado en su RUC/RUS.</b> Califica por el perfil Empresarial que elegiste: verifica el negocio en campo.</p>' : ''}
       ${ev.estado !== 'NO_CALIFICA' ? bloqueOferta(ev, score) : ''}
       ${fallan.length ? `<ul class="requisitos">${fallan.map(q => li(q, 'no')).join('')}</ul>` : ''}
       ${faltan.length ? `<ul class="requisitos">${faltan.map(q => li(q, 'falta')).join('')}</ul>` : ''}
@@ -209,7 +212,9 @@
     const sug = Productos.sugerirTipoCliente(c);
     const tipo = reg.tipoCliente || sug.tipo;
     const vivienda = reg.vivienda || null;
-    const evals = Productos.evaluar(c, a, { tipoCliente: tipo, vivienda });
+    const sugAct = Productos.sugerirActividad(a);
+    const actividad = reg.actividad !== undefined ? reg.actividad : sugAct.actividad;
+    const evals = Productos.evaluar(c, a, { tipoCliente: tipo, vivienda, actividad });
     const califica = evals.filter(e => e.estado === 'CALIFICA');
     const revisar = evals.filter(e => e.estado === 'REVISAR');
     const no = evals.filter(e => e.estado === 'NO_CALIFICA');
@@ -219,7 +224,15 @@
           <h2>Productos y campañas a los que accede</h2>
           <p class="resumen-prod"><b class="num">${califica.length}</b> de ${evals.length} califican${revisar.length ? ` · <b class="num">${revisar.length}</b> con datos por revisar` : ''} · Región ${esc(Campanas.CONFIG.region)} (agencia ${esc(Campanas.CONFIG.agencia)})</p>
         </div>
-        <div class="filtros-cliente">
+      </div>
+      <div class="filtros-cliente">
+          <div class="tipo-cliente">
+            <span class="etq-tipo">Perfil del cliente</span>
+            <div class="segmentado" role="group" aria-label="Perfil del cliente">
+              ${ACTIVIDADES.map(([k, t]) => `<button type="button" data-actividad="${k}" class="${k === actividad ? 'activo' : ''}">${t}</button>`).join('')}
+            </div>
+            <small class="${actividad ? '' : 'pendiente'}">${actividad ? esc(ACTIVIDAD_AYUDA[actividad]) + ' ' : ''}${reg.actividad !== undefined && reg.actividad !== sugAct.actividad ? `<b>Elegido por ti</b>${sugAct.actividad ? ` (según RUC: ${esc(capital(sugAct.actividad))})` : ''}.` : `<b>${actividad ? 'Sugerido:' : 'Elígelo:'}</b> ${esc(sugAct.motivo)}`}</small>
+          </div>
           <div class="tipo-cliente">
             <span class="etq-tipo">Tipo de cliente en Caja Piura</span>
             <div class="segmentado seg-4" role="group" aria-label="Tipo de cliente">
@@ -234,7 +247,6 @@
             </div>
             <small class="${vivienda ? '' : 'pendiente'}">${vivienda ? (vivienda === 'ALQUILADA' ? 'Varias campañas exigen casa propia o familiar.' : 'Cumple domicilio estable.') : 'Elígela: algunas campañas no aceptan vivienda alquilada.'}</small>
           </div>
-        </div>
       </div>
       ${resumenMejores(evals)}
       ${califica.length || revisar.length ? `<div class="prod-grid">${[...califica, ...revisar].map(ev => tarjetaProducto(ev, c.score)).join('')}</div>`
@@ -323,6 +335,8 @@
               <dt>Antigüedad del RUC</dt><dd>${antig(r.antiguedadMeses)}</dd>
             </dl>
             <div class="nota">${esc(r.motivo)}</div>
+            ${reg.actividad === 'EMPRESARIAL' && !['NEGOCIO', 'EMPRESA'].includes(r.perfil) ? '<div class="nota nota-asesor"><b>Perfil Empresarial elegido por el asesor:</b> tiene negocio aunque no figure con RUC/RUS activo. Se evalúa para campañas empresariales.</div>' : ''}
+            ${reg.actividad === 'CONSUMO' && ['NEGOCIO', 'EMPRESA'].includes(r.perfil) ? '<div class="nota nota-asesor"><b>Perfil Consumo elegido por el asesor:</b> se evalúa sin considerar el negocio del RUC.</div>' : ''}
           </section>
 
           ${c.ingresoEstimado || (c.indicadores || []).length ? `
@@ -353,6 +367,7 @@
     panel.querySelectorAll('.segmentado button').forEach(b => b.addEventListener('click', () => {
       if (b.dataset.tipo) reg.tipoCliente = b.dataset.tipo;
       if (b.dataset.vivienda) reg.vivienda = reg.vivienda === b.dataset.vivienda ? null : b.dataset.vivienda;
+      if (b.dataset.actividad) reg.actividad = b.dataset.actividad;
       try { sessionStorage.setItem(CLAVE, JSON.stringify(reg)); } catch (e) { /* sin almacenamiento */ }
       render(reg);
       const sec = panel.querySelector('.productos');

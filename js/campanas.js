@@ -81,7 +81,7 @@
         id: 'contigo-myperu', nombre: 'Crédito Contigo MyPerú', segmento: 'Empresarial', tipo: 'Producto',
         descripcion: 'Facilidades de pago ante situaciones coyunturales. Comercio, producción o servicios.',
         requisitos: [
-          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Tener negocio propio' },
+          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Tener negocio propio (perfil Empresarial)' },
           { campo: 'score', op: '>=', valor: 660, texto: 'Score desde 660 (sin score: solo nodos A, B o C)' },
           { campo: 'normal6m', op: '==', valor: true, texto: 'Calificación 100% Normal últimos 6 meses (o sin calificación)' },
           ...ifis(3, 4),
@@ -105,7 +105,7 @@
         descripcion: 'Para mujeres con negocio: capital de trabajo o activo fijo.',
         requisitos: [
           { campo: 'genero', op: '==', valor: 'FEMENINO', texto: 'Género femenino' },
-          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Actividad empresarial (negocio)' },
+          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Actividad empresarial: negocio propio (perfil Empresarial)' },
           { campo: 'normalActual', op: '==', valor: true, texto: 'Clasificación crediticia 100% Normal' },
           { campo: 'numEntidades', op: '<=', valor: 3, texto: 'Hasta 3 IFIs incluida Caja Piura' },
           viviendaEstable('Domicilio estable: casa propia o de familia (no alquilada)')
@@ -122,7 +122,7 @@
         id: 'al-toque', nombre: 'Crédito Al Toque', segmento: 'Empresarial', tipo: 'Producto',
         descripcion: 'Requisitos mínimos para personas naturales con negocio (microempresa).',
         requisitos: [
-          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Actividad empresarial (producción, comercio o servicios)' },
+          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Actividad empresarial: producción, comercio o servicios (perfil Empresarial)' },
           { campo: 'esPersonaNatural', op: '==', valor: true, texto: 'Persona natural', siFalta: 'cumple' },
           ...ifis(3, 4),
           { campo: 'normal3m', op: '==', valor: true, texto: 'Calificación 100% Normal últimos 3 meses' },
@@ -150,7 +150,7 @@
         id: 'credifamilia', nombre: 'Credifamilia', segmento: 'Consumo', tipo: 'Producto',
         descripcion: 'Consumo para personas naturales con negocio vigente (micro y pequeña empresa).',
         requisitos: [
-          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Contar con negocio propio activo' },
+          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Contar con negocio propio activo (perfil Empresarial)' },
           { campo: 'normalActual', op: '==', valor: true, texto: 'Calificación 100% Normal en el sistema financiero' },
           ...ifis(3, 4),
           viviendaEstable('Estabilidad domiciliaria: casa propia o familiar (numeral 7.2 del reglamento)')
@@ -168,7 +168,7 @@
         vigencia: { desde: '2026-09-01', hasta: '2026-12-31' },
         descripcion: 'Campaña de consumo para clientes con negocio (evaluación por estados financieros).',
         requisitos: [
-          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Cliente con negocio' },
+          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Cliente con negocio (perfil Empresarial)' },
           { campo: 'antiguedadMeses', op: '>=', valor: 6, texto: 'Mínimo 6 meses de antigüedad en la actividad', siFalta: 'revisar' },
           { campo: 'score', op: '>=', valor: minFamilia, texto: `Score desde ${minFamilia} (región ${region})` },
           { campo: 'normal6m', op: '==', valor: true, texto: 'Calificación 100% Normal últimos 6 meses' },
@@ -190,7 +190,7 @@
         vigencia: { desde: '2026-09-01', hasta: '2026-12-31' },
         descripcion: 'Campaña de consumo para dependientes e independientes (evaluación por hoja de trabajo).',
         requisitos: [
-          { campo: 'perfil', op: 'notIn', valor: NEGOCIO, texto: 'Ingresos como dependiente o independiente (clientes con negocio: Credifamilia)' },
+          { campo: 'perfil', op: 'notIn', valor: NEGOCIO, texto: 'Perfil Consumo: dependiente o independiente sin negocio (con negocio: Credifamilia)' },
           { campo: 'score', op: '>=', valor: minPersona, texto: `Score desde ${minPersona} (región ${region})` },
           { campo: 'normal6m', op: '==', valor: true, texto: 'Calificación 100% Normal últimos 6 meses' },
           ...ifis(3, 4),
@@ -235,7 +235,7 @@
         descripcion: 'Retener clientes MYPE recurrentes que reciben ofertas de compra de deuda de la competencia.',
         requisitos: [
           { campo: 'creditoVigente', op: '==', valor: true, texto: 'Cliente con crédito MYPE vigente en Caja Piura' },
-          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Negocio (comercio, producción o servicios)' },
+          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Negocio: comercio, producción o servicios (perfil Empresarial)' },
           { campo: 'numEntidades', op: '<=', valor: 4, texto: 'Hasta 4 IFIs incluida Caja Piura' },
           { campo: 'normal12m', op: '==', valor: true, texto: 'Calificación 100% Normal últimos 12 meses' },
           { campo: 'score', op: '>=', valor: 574, texto: 'Score desde 574' }
@@ -256,7 +256,7 @@
         requisitos: [
           { campo: 'creditoVigente', op: '==', valor: false, texto: 'Sin obligación vigente con Caja Piura' },
           { campo: 'deudaOtrasIfis', op: '>', valor: 0, texto: 'Tiene deuda en otras IFIs para comprar' },
-          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Negocio (comercio, producción o servicios)' },
+          { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Negocio: comercio, producción o servicios (perfil Empresarial)' },
           { campo: 'entidadesSinCajaPiura', op: '<=', valor: 2, texto: 'Hasta 2 IFIs sin incluir Caja Piura' },
           { campo: 'normal12m', op: '==', valor: true, texto: 'Calificación 100% Normal últimos 12 meses (o sin calificación)' },
           { campo: 'score', op: '>=', valor: 574, texto: 'Score desde 574' }

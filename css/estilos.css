@@ -247,11 +247,13 @@ pre.texto-pdf { white-space: pre-wrap; font-size: 12px; background: var(--fondo)
 .prod-top h2 { margin-bottom: 2px; }
 .resumen-prod { margin: 0; font-size: 14px; color: var(--tinta-2); }
 .resumen-prod b { color: var(--verde); font-size: 16px; }
-.filtros-cliente { display: flex; gap: 20px; flex-wrap: wrap; justify-content: flex-end; }
-.tipo-cliente { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; max-width: 440px; }
+.filtros-cliente { display: grid; grid-template-columns: repeat(3, minmax(0, auto)); gap: 14px 28px; justify-content: start;
+  background: var(--fondo); border: 1px solid var(--linea); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+.nota-asesor { background: var(--acento-suave); border-left: 3px solid var(--acento); margin-top: 8px; }
+.tipo-cliente { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; max-width: 440px; }
 .tipo-cliente small.pendiente { color: var(--ambar); font-weight: 700; }
 .nota-prod { margin: 0; font-size: 12.5px; background: var(--ambar-suave); color: var(--tinta-2); border-radius: 8px; padding: 8px 10px; border-left: 3px solid var(--ambar); }
-.tipo-cliente small { font-size: 12px; color: var(--tinta-3); text-align: right; }
+.tipo-cliente small { font-size: 12px; color: var(--tinta-3); text-align: left; max-width: 340px; }
 .etq-tipo { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--tinta-3); }
 .segmentado { display: inline-flex; flex-wrap: wrap; background: var(--fondo); border: 1px solid var(--linea); border-radius: 10px; padding: 3px; }
 .segmentado button { border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 700; color: var(--tinta-2); padding: 6px 12px; border-radius: 7px; cursor: pointer; }
@@ -337,6 +339,7 @@ dialog::backdrop { background: rgba(20, 24, 30, .45); }
   .metricas { grid-template-columns: repeat(2, 1fr); }
   .prod-grid { grid-template-columns: repeat(2, 1fr); }
   .mejores { grid-template-columns: 1fr 1fr; }
+  .filtros-cliente { grid-template-columns: 1fr 1fr; }
   .mejores-nota { grid-column: 1 / -1; }
 }
 @media (max-width: 560px) {
@@ -353,7 +356,7 @@ dialog::backdrop { background: rgba(20, 24, 30, .45); }
   .mejores { grid-template-columns: 1fr; }
   .of-grande { font-size: 20px; }
   .tipo-cliente { align-items: flex-start; max-width: none; }
-  .filtros-cliente { justify-content: flex-start; gap: 14px; }
+  .filtros-cliente { grid-template-columns: 1fr; gap: 14px; }
   .segmentado.seg-4 { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
   .segmentado.seg-4 button { text-align: center; }
   .tipo-cliente small { text-align: left; }

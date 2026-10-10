@@ -50,13 +50,39 @@
   }
 
   /** Aplana cliente + análisis en los campos que usan las reglas. */
+  const CON_NEGOCIO = ['NEGOCIO', 'EMPRESA'];
+
+  /**
+   * Perfil sugerido según el RUC: EMPRESARIAL (con negocio) o CONSUMO (sin negocio).
+   * Sin RUC o sin detalle no se puede saber: el asesor debe elegirlo.
+   */
+  function sugerirActividad(analisis) {
+    const p = analisis.ruc.perfil;
+    if (CON_NEGOCIO.includes(p)) return { actividad: 'EMPRESARIAL', motivo: `El RUC lo registra con negocio (${analisis.ruc.perfilTexto.toLowerCase()}).` };
+    if (p === 'SERVICIOS') return { actividad: 'CONSUMO', motivo: 'El RUC lo registra sin negocio. Si tiene un negocio sin RUC/RUS activo, elige Empresarial.' };
+    return { actividad: null, motivo: 'Sin RUC o sin detalle en el reporte: indica si tiene negocio.' };
+  }
+
+  /**
+   * Perfil que usan las reglas. El botón del asesor manda sobre el RUC:
+   * EMPRESARIAL = tiene negocio aunque no tenga RUC/RUS activo; CONSUMO = sin negocio.
+   */
+  function perfilEfectivo(analisis, actividad) {
+    const delRuc = analisis.ruc.perfil;
+    if (actividad === 'EMPRESARIAL') return { perfil: CON_NEGOCIO.includes(delRuc) ? delRuc : 'NEGOCIO', negocioSinRuc: !CON_NEGOCIO.includes(delRuc) };
+    if (actividad === 'CONSUMO') return { perfil: CON_NEGOCIO.includes(delRuc) ? 'SERVICIOS' : delRuc, negocioSinRuc: false };
+    // sin elección: se usa el RUC, salvo que no permita saberlo
+    return { perfil: ['SIN_RUC', 'INDETERMINADO'].includes(delRuc) ? null : delRuc, negocioSinRuc: false };
+  }
+
   /** VIGENTE = recurrente con crédito vigente en Caja Piura. */
   function normalizarTipo(t) {
     return t === 'VIGENTE' ? { tipo: 'RECURRENTE', creditoVigente: true } : { tipo: t, creditoVigente: false };
   }
 
-  function hechos(cliente, analisis, tipoElegido, vivienda) {
+  function hechos(cliente, analisis, tipoElegido, vivienda, actividad) {
     const { tipo: tipoCliente, creditoVigente } = normalizarTipo(tipoElegido);
+    const pe = perfilEfectivo(analisis, actividad);
     const cp = cajaPiura(cliente);
     const ciiu = cliente.ciiu ? String(cliente.ciiu).padStart(4, '0') : null;
     const sinDeuda = cliente.numEntidades === 0;
@@ -86,12 +112,14 @@
       normal6m: normalUltimos(cliente.historial, 6) ?? null,
       normal12m: normalUltimos(cliente.historial, 12) ?? null,
       peorCalificacion: analisis.deuda.peorCalificacion,
-      perfil: analisis.ruc.perfil,
+      perfil: pe.perfil,
+      negocioSinRuc: pe.negocioSinRuc,
+      actividad: actividad || null,
       tieneRuc: analisis.ruc.tieneRuc,
       rucActivo: analisis.ruc.rucActivo,
       esPersonaNatural: cliente.ruc ? !String(cliente.ruc).startsWith('20') : true,
       esAgroPesca: ciiu ? /^0[1-3]/.test(ciiu) : null,
-      antiguedadMeses: analisis.ruc.antiguedadMeses,
+      antiguedadMeses: pe.negocioSinRuc ? null : analisis.ruc.antiguedadMeses,
       genero: cliente.genero ?? null,
       ingresoEstimadoMin: cliente.ingresoEstimado ? cliente.ingresoEstimado.min : null,
       deudaMaxima: analisis.deuda.maximo,
@@ -179,14 +207,15 @@
   /**
    * @param {object} cliente
    * @param {object} analisis
-   * @param {object} opciones { tipoCliente, vivienda, region, hoy }
+   * @param {object} opciones { tipoCliente, vivienda, actividad, region, hoy }
    */
   function evaluar(cliente, analisis, opciones = {}) {
     const tipoElegido = opciones.tipoCliente || sugerirTipoCliente(cliente).tipo;
     const tipoCliente = normalizarTipo(tipoElegido).tipo;
     const hoy = opciones.hoy || new Date().toISOString().slice(0, 10);
     const vivienda = opciones.vivienda || null;
-    const h = hechos(cliente, analisis, tipoElegido, vivienda);
+    const actividad = opciones.actividad !== undefined ? opciones.actividad : sugerirActividad(analisis).actividad;
+    const h = hechos(cliente, analisis, tipoElegido, vivienda, actividad);
     const cat = Campanas.catalogo(opciones.region || Campanas.CONFIG.region);
     const orden = { CALIFICA: 0, REVISAR: 1, NO_CALIFICA: 2 };
 
@@ -195,6 +224,11 @@
       for (const r of p.requisitos || []) {
         if (r.soloPara && !r.soloPara.includes(tipoCliente)) continue;
         const valor = h[r.campo];
+        // Negocio sin RUC: la antigüedad no está en el reporte, se verifica en campo
+        if (r.campo === 'antiguedadMeses' && h.negocioSinRuc) {
+          detalle.push({ ...r, valorCliente: null, cumple: true, verificarEnCampo: true });
+          continue;
+        }
         if (valor === null || valor === undefined) {
           detalle.push({ ...r, valorCliente: null, cumple: r.siFalta === 'cumple' ? true : null, sinDato: true });
           continue;
@@ -205,7 +239,11 @@
       const estado = detalle.some(d => d.cumple === false) ? 'NO_CALIFICA'
         : detalle.some(d => d.cumple === null) ? 'REVISAR' : 'CALIFICA';
       const oferta = calcularOferta(p, h);
-      return { producto: p, estado, detalle, oferta, verificar: p.verificar || [] };
+      const pideNegocio = (p.requisitos || []).some(r => r.campo === 'perfil' && r.op === 'in');
+      const verificar = [...(p.verificar || [])];
+      if (pideNegocio && h.negocioSinRuc) verificar.unshift('Negocio no registrado en su RUC/RUS: verificar el negocio en campo (existencia, antigüedad e ingresos)');
+      for (const d of detalle) if (d.verificarEnCampo) verificar.unshift(d.texto + ' (verificar en campo)');
+      return { producto: p, estado, detalle, oferta, verificar, negocioSinRuc: pideNegocio && h.negocioSinRuc };
     }).sort((a, b) => (orden[a.estado] - orden[b.estado])
       || ((b.oferta && b.oferta.montoMax || 0) - (a.oferta && a.oferta.montoMax || 0))
       || ((a.oferta && a.oferta.teaMin || 99) - (b.oferta && b.oferta.teaMin || 99)));
@@ -220,5 +258,5 @@
     return { mejorMonto, mejorTasa };
   }
 
-  return { evaluar, hechos, sugerirTipoCliente, normalUltimos, calcularOferta, resumenOfertas };
+  return { evaluar, hechos, sugerirTipoCliente, sugerirActividad, perfilEfectivo, normalUltimos, calcularOferta, resumenOfertas };
 });
