@@ -255,7 +255,7 @@
 
   function tarjetaScore(c) {
     const n = ScoreVisual.nivelDe(c.score);
-    return `<div class="kpi destacado kpi-score nivel-${n ? n.id : 'NA'}">
+    return `<div class="kpi destacado kpi-score nivel-${n ? n.id : 'NA'}" title="Toca para repetir la animación" role="button" tabindex="0">
       <div class="etq">Score Experian</div>
       ${ScoreVisual.medidorSVG(c.score)}
       <div class="score-centro">
@@ -297,7 +297,7 @@
       <div class="etq">Siguiente nivel</div>
       <p class="nivel-titulo">${titulo}</p>
       <div class="nivel-barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">
-        <span style="width:${pct}%; background:${sig ? sig.color : n.color}"></span>
+        <span data-ancho="${pct}" style="width:${pct}%; background:${sig ? sig.color : n.color}"></span>
       </div>
       <div class="nivel-escala"><span>${n.nombre} · ${n.desde}</span><span>${sig ? `${sig.nombre} · ${sig.desde}` : '999'}</span></div>
       ${extra}
@@ -475,21 +475,42 @@
     panel.querySelectorAll('.grafico').forEach(g => { g.scrollLeft = g.scrollWidth; });
   }
 
-  // Anima el medidor una vez por cliente/score y lanza confeti si el score es 800 o más
+  // Anima medidor, número y barra al abrir el cliente (o al cambiar su score) y lanza
+  // confeti si el score es 800 o más. Cambiar filtros no repite la animación.
   let ultimoAnimado = null;
+  function lanzarEfectos(c) {
+    ScoreVisual.animar(panel, c.score);
+    const n = ScoreVisual.nivelDe(c.score);
+    if (n && n.id === 'EXCELENTE') setTimeout(() => ScoreVisual.confeti(), 700);
+  }
   function efectosScore(c) {
+    const tarjeta = panel.querySelector('.kpi-score');
+    if (tarjeta) {
+      const repetir = () => lanzarEfectos(c);
+      tarjeta.addEventListener('click', repetir);
+      tarjeta.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); repetir(); } });
+    }
     const clave = `${c.dni || c.nombre || ''}|${c.fechaReporte || ''}|${c.score}`;
     if (clave === ultimoAnimado) return;
     ultimoAnimado = clave;
-    ScoreVisual.animar(panel.querySelector('.kpi-score'), c.score);
-    const n = ScoreVisual.nivelDe(c.score);
-    if (n && n.id === 'EXCELENTE') {
-      const k = 'filtproduc:confeti:' + clave;
-      let visto = false;
-      try { visto = sessionStorage.getItem(k) === '1'; sessionStorage.setItem(k, '1'); } catch (e) { /* sin almacenamiento */ }
-      if (!visto) setTimeout(() => ScoreVisual.confeti(), 500);
-    }
+    lanzarEfectos(c);
   }
+
+  // Botón ✨ de la barra: activar o apagar efectos animados
+  const btnEfectos = document.getElementById('btnEfectos');
+  function pintarBtnEfectos() {
+    if (!btnEfectos) return;
+    const on = ScoreVisual.efectosActivos();
+    btnEfectos.classList.toggle('apagado', !on);
+    btnEfectos.title = on ? 'Efectos animados: activados (clic para apagar)' : 'Efectos animados: apagados (clic para activar)';
+    btnEfectos.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  if (btnEfectos) btnEfectos.addEventListener('click', () => {
+    ScoreVisual.setEfectos(!ScoreVisual.efectosActivos());
+    pintarBtnEfectos();
+    if (ScoreVisual.efectosActivos() && reg && reg.cliente) lanzarEfectos(reg.cliente);
+  });
+  pintarBtnEfectos();
 
   // ---------- edición manual ----------
   function configurarEdicion(reg) {

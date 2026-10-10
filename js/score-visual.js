@@ -4,7 +4,7 @@
  *  - Medidor semicircular con aguja animada
  *  - Número que cuenta hasta el score
  *  - Lluvia de confeti (score 800 o más)
- * Respeta "reducir movimiento" del sistema.
+ * Los efectos se pueden apagar con el botón ✨ de la barra (se guarda en el navegador).
  */
 (function (root) {
   'use strict';
@@ -18,7 +18,16 @@
   ];
   const MIN = 300, MAX = 999; // escala visible del medidor
 
-  const reducirMovimiento = () => !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // Efectos activados salvo que el asesor los apague con el botón ✨.
+  // (No se usa la opción "reducir movimiento" de Windows: suele venir apagada en equipos de trabajo.)
+  const CLAVE_EFECTOS = 'filtproduc:efectos';
+  function efectosActivos() {
+    try { return localStorage.getItem(CLAVE_EFECTOS) !== 'off'; } catch (e) { return true; }
+  }
+  function setEfectos(activos) {
+    try { localStorage.setItem(CLAVE_EFECTOS, activos ? 'on' : 'off'); } catch (e) { /* sin almacenamiento */ }
+  }
+  const reducirMovimiento = () => !efectosActivos();
 
   function nivelDe(score) {
     if (score === null || score === undefined || isNaN(score)) return null;
@@ -59,7 +68,7 @@
     const grados = score === null || score === undefined ? -90 : -90 + 180 * frac(score);
     return `<svg class="medidor" viewBox="0 0 220 122" role="img" aria-label="Medidor de score${score != null ? ': ' + score + ', nivel ' + n.nombre : ''}">
       ${segs}${marcas}
-      <g class="aguja" data-grados="${grados.toFixed(1)}" style="transform-origin:${CX}px ${CY}px; transform: rotate(${grados.toFixed(1)}deg)">
+      <g class="aguja" data-grados="${grados.toFixed(1)}" transform="rotate(${grados.toFixed(1)} ${CX} ${CY})">
         <line x1="${CX}" y1="${CY}" x2="${CX}" y2="${CY - R + 6}" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
       </g>
       <circle cx="${CX}" cy="${CY}" r="7" fill="currentColor"/>
@@ -67,38 +76,41 @@
     </svg>`;
   }
 
-  /** Anima la aguja y el número dentro de 'contenedor'. */
-  function animar(contenedor, score) {
-    if (!contenedor || score === null || score === undefined) return;
-    const aguja = contenedor.querySelector('.aguja');
-    const numero = contenedor.querySelector('[data-cuenta]');
-    if (reducirMovimiento()) return; // ya están en su posición final
-    const destino = aguja ? aguja.dataset.grados : null;
-    if (aguja) {
-      aguja.style.transition = 'none';
-      aguja.style.transform = 'rotate(-90deg)';
-      aguja.getBoundingClientRect();
-      requestAnimationFrame(() => {
-        aguja.style.transition = 'transform 1.3s cubic-bezier(.2,.9,.25,1.15)';
-        aguja.style.transform = `rotate(${destino}deg)`;
-      });
-    }
-    if (numero) {
-      const fin = +numero.dataset.cuenta, dur = 1200, t0 = performance.now();
-      const paso = ahora => {
-        const t = Math.min(1, (ahora - t0) / dur);
-        const e = 1 - Math.pow(1 - t, 3);
-        numero.textContent = Math.round(fin * e);
-        if (t < 1) requestAnimationFrame(paso); else numero.textContent = fin;
-      };
-      numero.textContent = '0';
-      requestAnimationFrame(paso);
-    }
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+
+  /**
+   * Anima, dentro de 'raiz': la aguja del medidor, el número del score (cuenta de 0
+   * al score) y la barra de "Siguiente nivel" (se llena). Si los efectos están
+   * apagados, deja todo en su posición final.
+   */
+  function animar(raiz, score) {
+    if (!raiz) return;
+    const aguja = raiz.querySelector('.kpi-score .aguja');
+    const numero = raiz.querySelector('.kpi-score [data-cuenta]');
+    const barra = raiz.querySelector('.nivel-barra span[data-ancho]');
+    const gradosFin = aguja ? parseFloat(aguja.dataset.grados) : null;
+    const nFin = numero ? +numero.dataset.cuenta : null;
+    const anchoFin = barra ? parseFloat(barra.dataset.ancho) : null;
+    const colocar = e => {
+      if (aguja) aguja.setAttribute('transform', `rotate(${(-90 + (gradosFin + 90) * e).toFixed(2)} ${CX} ${CY})`);
+      if (numero) numero.textContent = Math.round(nFin * e);
+      if (barra) barra.style.width = (anchoFin * e).toFixed(1) + '%';
+    };
+    if (aguja) aguja.style.transform = ''; // la rotación la maneja el atributo transform
+    if (!efectosActivos() || score === null || score === undefined) { colocar(1); return; }
+    const DUR = 2000, t0 = performance.now();
+    colocar(0);
+    const paso = ahora => {
+      const t = Math.min(1, (ahora - t0) / DUR);
+      colocar(easeOut(t));
+      if (t < 1) requestAnimationFrame(paso);
+    };
+    requestAnimationFrame(paso);
   }
 
   // ---------- confeti ----------
   function confeti(opciones = {}) {
-    if (reducirMovimiento() || !root.document) return;
+    if (!efectosActivos() || !root.document) return;
     const colores = opciones.colores || ['#0b3d91', '#1d56a8', '#f8a900', '#ffd25a', '#ffffff', '#4f86e0'];
     const canvas = document.createElement('canvas');
     canvas.className = 'confeti';
@@ -142,5 +154,5 @@
     requestAnimationFrame(cuadro);
   }
 
-  root.ScoreVisual = { NIVELES, nivelDe, siguienteNivel, medidorSVG, animar, confeti, reducirMovimiento };
+  root.ScoreVisual = { NIVELES, nivelDe, siguienteNivel, medidorSVG, animar, confeti, efectosActivos, setEfectos, reducirMovimiento };
 })(typeof window !== 'undefined' ? window : this);
