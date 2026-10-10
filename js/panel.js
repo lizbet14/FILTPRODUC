@@ -208,12 +208,108 @@
     </div>`;
   }
 
+  /** Filtros vigentes del asesor (o lo sugerido por el reporte). */
+  function opcionesFiltro(c, a, reg) {
+    const tipoCliente = reg.tipoCliente || Productos.sugerirTipoCliente(c).tipo;
+    const vivienda = reg.vivienda || null;
+    const actividad = reg.actividad !== undefined ? reg.actividad : Productos.sugerirActividad(a).actividad;
+    return { tipoCliente, vivienda, actividad };
+  }
+
+  // ---------- score: medidor, nivel y siguiente nivel ----------
+  /** Qué mejora en las campañas si el cliente llega a 'nuevoScore'. */
+  function mejorasConScore(c, a, opciones, nuevoScore) {
+    const hoy = Productos.evaluar(c, a, opciones);
+    const c2 = { ...c, score: nuevoScore };
+    const despues = Productos.evaluar(c2, Analisis.analizarCliente(c2), opciones);
+    const antes = Object.fromEntries(hoy.map(e => [e.producto.id, e]));
+    const out = [];
+    for (const e of despues) {
+      if (e.estado !== 'CALIFICA' || !e.oferta || e.oferta.montoMax === null) continue;
+      const b = antes[e.producto.id];
+      const bo = b && b.estado === 'CALIFICA' ? b.oferta : null;
+      if (!bo) { out.push({ peso: 3, monto: e.oferta.montoMax, texto: `<b>${esc(e.producto.nombre)}</b>: empieza a calificar, hasta ${sMonto(e.oferta.montoMax)} (TEA ${pctTxt(e.oferta.teaMin)})` }); continue; }
+      const subeMonto = e.oferta.montoMax > bo.montoMax, bajaTea = e.oferta.teaMin < bo.teaMin;
+      if (!subeMonto && !bajaTea) continue;
+      const partes = [];
+      if (subeMonto) partes.push(`${sMonto(bo.montoMax)} → <b>${sMonto(e.oferta.montoMax)}</b>`);
+      if (bajaTea) partes.push(`TEA ${pctTxt(bo.teaMin)} → <b>${pctTxt(e.oferta.teaMin)}</b>`);
+      out.push({ peso: subeMonto ? 2 : 1, monto: e.oferta.montoMax - bo.montoMax, texto: `<b>${esc(e.producto.nombre)}</b>: ${partes.join(' · ')}` });
+    }
+    return out.sort((x, y) => (y.peso - x.peso) || (y.monto - x.monto));
+  }
+
+  /** Próximo corte de score (de cualquier campaña) por encima del actual que mejore algo. */
+  function proximaMejora(c, a, opciones) {
+    const cortes = new Set();
+    for (const p of Campanas.catalogo()) {
+      for (const t of (p.oferta && p.oferta.tramos) || []) if (t.scoreMin > c.score) cortes.add(t.scoreMin);
+      for (const r of p.requisitos || []) if (r.campo === 'score' && r.valor > c.score) cortes.add(r.valor);
+    }
+    for (const corte of [...cortes].sort((x, y) => x - y)) {
+      const m = mejorasConScore(c, a, opciones, corte);
+      if (m.length) return { score: corte, mejoras: m };
+    }
+    return null;
+  }
+
+  function tarjetaScore(c) {
+    const n = ScoreVisual.nivelDe(c.score);
+    return `<div class="kpi destacado kpi-score nivel-${n ? n.id : 'NA'}">
+      <div class="etq">Score Experian</div>
+      ${ScoreVisual.medidorSVG(c.score)}
+      <div class="score-centro">
+        <span class="valor num" ${c.score !== null && c.score !== undefined ? `data-cuenta="${c.score}"` : ''}>${v(c.score)}</span>
+        ${n ? `<span class="insignia-nivel">${n.id === 'EXCELENTE' ? '★ ' : ''}${esc(n.nombre)}${n.medalla !== '—' ? ` · ${esc(n.medalla)}` : ''}</span>` : ''}
+      </div>
+      <div class="sub">${esc(c.scoreTexto || 'Sentinel')}</div>
+    </div>`;
+  }
+
+  function tarjetaSiguienteNivel(c, a, reg) {
+    if (c.score === null || c.score === undefined) {
+      return `<div class="kpi kpi-nivel"><div class="etq">Siguiente nivel</div><div class="sub">El reporte no trae score. Corrígelo con "Corregir datos" si lo tienes.</div></div>`;
+    }
+    const n = ScoreVisual.nivelDe(c.score);
+    const sig = ScoreVisual.siguienteNivel(c.score);
+    const opciones = opcionesFiltro(c, a, reg);
+    let objetivo, titulo, faltan, pct, mejoras;
+    if (sig) {
+      objetivo = sig.desde; faltan = sig.desde - c.score;
+      pct = Math.round(((c.score - n.desde) / (sig.desde - n.desde)) * 100);
+      titulo = `A <b class="num">${faltan}</b> punto${faltan === 1 ? '' : 's'} de <b>${esc(sig.nombre)}</b> (${sig.desde})`;
+      mejoras = mejorasConScore(c, a, opciones, objetivo);
+    }
+    // Ya en el nivel más alto, o el siguiente nivel no mejora nada: mostrar la próxima mejora real
+    let extra = '';
+    if (!sig || !mejoras.length) {
+      const pm = proximaMejora(c, a, opciones);
+      if (!sig) {
+        titulo = '<b>Nivel máximo</b> alcanzado';
+        pct = 100;
+      }
+      if (pm) {
+        extra = `<p class="nivel-prox">Próxima mejora por score en <b class="num">${pm.score}</b> (faltan ${pm.score - c.score}):</p>`;
+        mejoras = pm.mejoras;
+      } else mejoras = [];
+    }
+    return `<div class="kpi kpi-nivel">
+      <div class="etq">Siguiente nivel</div>
+      <p class="nivel-titulo">${titulo}</p>
+      <div class="nivel-barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">
+        <span style="width:${pct}%; background:${sig ? sig.color : n.color}"></span>
+      </div>
+      <div class="nivel-escala"><span>${n.nombre} · ${n.desde}</span><span>${sig ? `${sig.nombre} · ${sig.desde}` : '999'}</span></div>
+      ${extra}
+      ${mejoras.length ? `<ul class="nivel-mejoras">${mejoras.slice(0, 3).map(m => `<li>${m.texto}</li>`).join('')}</ul>${mejoras.length > 3 ? `<p class="nivel-mas">y ${mejoras.length - 3} mejora(s) más</p>` : ''}`
+        : `<p class="nivel-mas">${sig ? 'Con los filtros actuales, subir de nivel no cambia sus ofertas.' : 'Ya tiene las mejores condiciones por score en las campañas a las que califica.'}</p>`}
+    </div>`;
+  }
+
   function seccionProductos(c, a, reg) {
     const sug = Productos.sugerirTipoCliente(c);
-    const tipo = reg.tipoCliente || sug.tipo;
-    const vivienda = reg.vivienda || null;
     const sugAct = Productos.sugerirActividad(a);
-    const actividad = reg.actividad !== undefined ? reg.actividad : sugAct.actividad;
+    const { tipoCliente: tipo, vivienda, actividad } = opcionesFiltro(c, a, reg);
     const evals = Productos.evaluar(c, a, { tipoCliente: tipo, vivienda, actividad });
     const califica = evals.filter(e => e.estado === 'CALIFICA');
     const revisar = evals.filter(e => e.estado === 'REVISAR');
@@ -277,7 +373,7 @@
       </section>
 
       <section class="kpis">
-        <div class="kpi destacado"><div class="etq">Score Experian</div><div class="valor num">${v(c.score)}</div><div class="sub">${esc(c.scoreTexto || 'Sentinel')}</div></div>
+        ${tarjetaScore(c)}
         <div class="kpi"><div class="etq">Semáforo · Calificación SBS</div><div class="valor"><span class="semaforo"><span class="luz ${c.semaforo}"></span>${c.semaforo ? capital(c.semaforo) : '—'}</span></div>
           <div class="sub">${SEM_TXT[c.semaforo] || 'Sin dato de calificación'}${c.porcentajeNormal !== null && c.porcentajeNormal !== undefined && c.porcentajeNormal < 100 ? ` · ${c.porcentajeNormal}% en Normal` : ''}${d.peorCalificacion && d.peorCalificacion !== c.calificacion ? ` · peor en el periodo: ${CALIF_TXT[d.peorCalificacion]}` : ''}</div>
           ${c.semaforoSentinel ? `<div class="sub sub-sentinel">Riesgo Sentinel: ${SENTINEL_TXT[c.semaforoSentinel] || c.semaforoSentinel.toLowerCase()}${c.semaforoValor !== null && c.semaforoValor !== undefined ? ` (${Number(c.semaforoValor).toFixed(3)})` : ''}</div>` : ''}</div>
@@ -289,6 +385,7 @@
           <div class="sub">${d.fechaMaximo ? `${esc(d.fechaMaximo)}` : ''}${d.desdeMaximo !== null && d.desdeMaximo < -0.01 ? ` · hoy ${(Math.abs(d.desdeMaximo) * 100).toFixed(0)}% menos` : d.desdeMaximo !== null && Math.abs(d.desdeMaximo) <= 0.01 ? ' · es su deuda actual' : ''}${d.meses ? ` · últimos ${d.meses} meses` : ''}</div></div>
         <div class="kpi"><div class="etq">Ingreso estimado</div><div class="valor num">${c.ingresoEstimado ? esc(c.ingresoEstimado.texto) : '—'}</div>
           <div class="sub">${c.ingresoEstimado ? 'Rango mensual según Sentinel' : 'El reporte no lo indica'}</div></div>
+        ${tarjetaSiguienteNivel(c, a, reg)}
       </section>
 
       ${seccionProductos(c, a, reg)}
@@ -373,8 +470,25 @@
       const sec = panel.querySelector('.productos');
       if (sec) sec.scrollIntoView({ block: 'nearest' });
     }));
+    efectosScore(c);
     // En celular el gráfico se desliza: mostrar primero los meses más recientes
     panel.querySelectorAll('.grafico').forEach(g => { g.scrollLeft = g.scrollWidth; });
+  }
+
+  // Anima el medidor una vez por cliente/score y lanza confeti si el score es 800 o más
+  let ultimoAnimado = null;
+  function efectosScore(c) {
+    const clave = `${c.dni || c.nombre || ''}|${c.fechaReporte || ''}|${c.score}`;
+    if (clave === ultimoAnimado) return;
+    ultimoAnimado = clave;
+    ScoreVisual.animar(panel.querySelector('.kpi-score'), c.score);
+    const n = ScoreVisual.nivelDe(c.score);
+    if (n && n.id === 'EXCELENTE') {
+      const k = 'filtproduc:confeti:' + clave;
+      let visto = false;
+      try { visto = sessionStorage.getItem(k) === '1'; sessionStorage.setItem(k, '1'); } catch (e) { /* sin almacenamiento */ }
+      if (!visto) setTimeout(() => ScoreVisual.confeti(), 500);
+    }
   }
 
   // ---------- edición manual ----------

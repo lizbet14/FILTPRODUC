@@ -23,7 +23,8 @@ Calibrado con el **"Reporte de Crédito" de Sentinel / Experian** (PDF descargad
 
 1. **Carga del PDF** (`index.html`): arrastrar o elegir el reporte Sentinel. El PDF se lee **solo en el navegador** con pdf.js; no se sube a ningún servidor.
 2. **Panel del cliente** (`panel.html`):
-   - Score, semáforo por calificación SBS según el orden SBS (NOR verde · CPP amarillo · DEF naranja · DUD rojo · PER negro), N° de entidades (IFIs), deuda total, endeudamiento máximo e ingreso estimado.
+   - **Medidor de score** con aguja animada y número que cuenta, 5 niveles (Muy bajo <477 · Bajo 477–597 · Medio 598–699 · Bueno 700–799 · Excelente 800+), **lluvia de confeti** con 800 o más y **barra al siguiente nivel** con las mejoras de oferta que obtendría.
+   - Semáforo por calificación SBS según el orden SBS (NOR verde · CPP amarillo · DEF naranja · DUD rojo · PER negro), N° de entidades (IFIs), deuda total, endeudamiento máximo e ingreso estimado.
    - Filtros del asesor: **perfil Empresarial o Consumo** (Empresarial = tiene negocio aunque no figure con RUC/RUS activo; manda sobre el dato del RUC), tipo de cliente (nuevo, reactivado, recurrente o **con crédito vigente**, que activa las condiciones de crédito paralelo) y vivienda (propia, familiar, alquilada).
    - **Perfil del RUC**: persona con negocio, solo presta servicios, empresa (RUC 20) o sin RUC; estado, condición, actividad y antigüedad.
    - **Historial de endeudamiento**: gráfico mensual con semáforo, tendencia, variación, máximo y promedio.
@@ -42,6 +43,7 @@ Calibrado con el **"Reporte de Crédito" de Sentinel / Experian** (PDF descargad
 | `js/sentinel-parser.js` | Detecta el formato; lector genérico de respaldo para otros formatos |
 | `js/analisis.js` | Perfil del RUC, análisis del historial de deuda y alertas |
 | `js/campanas.js` | Catálogo de campañas: solo criterios de calificación y condiciones (región por defecto: CENTRO) |
+| `js/score-visual.js` | Niveles de score, medidor, animaciones y confeti |
 | `js/productos.js` | Motor de calificación (tipo de cliente, ventanas de calificación, tramos por score) |
 | `vendor/pdfjs/` | pdf.js (Mozilla, Apache-2.0) incluido para no depender de CDNs |
 | `ejemplos/` | Reporte **ficticio** de prueba (datos inventados) |
