@@ -5,6 +5,8 @@
  *
  * ── Requisitos (¿califica?) ─────────────────────────────────────────────
  *   { campo, op, valor, texto, soloPara?: ['NUEVO','REACTIVADO','RECURRENTE'], siFalta?: 'revisar'|'cumple' }
+ *   Tipo de cliente: NUEVO | REACTIVADO | RECURRENTE (sin crédito vigente) | VIGENTE (con crédito vigente).
+ *   VIGENTE cuenta como RECURRENTE para los requisitos y activa creditoVigente = true.
  *   'verificar': requisitos que el asesor confirma fuera del reporte.
  *
  * ── Oferta (¿cuánto y a qué tasa?) ──────────────────────────────────────
@@ -48,7 +50,7 @@
   ];
 
   // Condiciones reutilizables para topes
-  const PARALELO = [{ campo: 'paralelo', op: '==', valor: true }];          // recurrente con crédito vigente en Caja Piura
+  const PARALELO = [{ campo: 'creditoVigente', op: '==', valor: true }];    // cliente con crédito vigente en Caja Piura (botón del asesor)
   const ALQUILADA = [{ campo: 'vivienda', op: '==', valor: 'ALQUILADA' }];
   const COMPETENCIA = [{ campo: 'competenciaDirecta', op: '==', valor: true }]; // deuda vigente con CMAC Cusco, Huancayo o Arequipa
 
@@ -203,8 +205,7 @@
             { id: 'alquilada', cuando: ALQUILADA, montoMax: 5000, plazo: 'hasta 18 meses', texto: 'Vivienda alquilada: solo con ingresos de 4ta o 5ta categoría, antigüedad laboral e ingresos fijos (sin fiador con casa propia). Hasta S/ 5,000 a 18 meses.' }
           ],
           referencias: [
-            { texto: 'Si sustenta ingresos solo con declaración jurada u otros documentos: hasta S/ 6,000.', montoMax: 6000 },
-            { texto: 'Paralelo con declaración jurada: hasta S/ 1,000 a 12 meses.', montoMax: 1000 }
+            { texto: 'Si sustenta ingresos solo con declaración jurada u otros documentos: hasta S/ 6,000.', montoMax: 6000 }
           ]
         },
         condiciones: ['Garantía Campaña "Credifácil Consumo" 5429', 'A sola firma']
@@ -233,7 +234,7 @@
         vigencia: { desde: '2026-10-01', hasta: '2026-12-31' },
         descripcion: 'Retener clientes MYPE recurrentes que reciben ofertas de compra de deuda de la competencia.',
         requisitos: [
-          { campo: 'tipoCliente', op: '==', valor: 'RECURRENTE', texto: 'Cliente recurrente con crédito MYPE vigente en Caja Piura' },
+          { campo: 'creditoVigente', op: '==', valor: true, texto: 'Cliente con crédito MYPE vigente en Caja Piura' },
           { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Negocio (comercio, producción o servicios)' },
           { campo: 'numEntidades', op: '<=', valor: 4, texto: 'Hasta 4 IFIs incluida Caja Piura' },
           { campo: 'normal12m', op: '==', valor: true, texto: 'Calificación 100% Normal últimos 12 meses' },
@@ -253,7 +254,7 @@
         vigencia: { desde: '2026-10-01', hasta: '2026-12-31' },
         descripcion: 'Ex clientes o clientes nuevos con deuda MYPE en la competencia.',
         requisitos: [
-          { campo: 'tieneCajaPiura', op: '==', valor: false, texto: 'Sin obligación vigente con Caja Piura' },
+          { campo: 'creditoVigente', op: '==', valor: false, texto: 'Sin obligación vigente con Caja Piura' },
           { campo: 'deudaOtrasIfis', op: '>', valor: 0, texto: 'Tiene deuda en otras IFIs para comprar' },
           { campo: 'perfil', op: 'in', valor: NEGOCIO, texto: 'Negocio (comercio, producción o servicios)' },
           { campo: 'entidadesSinCajaPiura', op: '<=', valor: 2, texto: 'Hasta 2 IFIs sin incluir Caja Piura' },

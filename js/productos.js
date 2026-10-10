@@ -44,13 +44,19 @@
   /** Tipo de cliente sugerido a partir del reporte (el asesor puede cambiarlo). */
   function sugerirTipoCliente(cliente) {
     const cp = cajaPiura(cliente);
-    if (cp.tiene) return { tipo: 'RECURRENTE', motivo: 'Caja Piura le reporta deuda vigente.' };
+    if (cp.tiene) return { tipo: 'VIGENTE', motivo: 'Caja Piura le reporta deuda vigente.' };
     if (cp.tuvo) return { tipo: 'REACTIVADO', motivo: 'Tuvo deuda con Caja Piura en los últimos meses, pero hoy no le reporta.' };
     return { tipo: 'NUEVO', motivo: 'Caja Piura no le reporta deuda. Si fue cliente antes, cámbialo a Reactivado.' };
   }
 
   /** Aplana cliente + análisis en los campos que usan las reglas. */
-  function hechos(cliente, analisis, tipoCliente, vivienda) {
+  /** VIGENTE = recurrente con crédito vigente en Caja Piura. */
+  function normalizarTipo(t) {
+    return t === 'VIGENTE' ? { tipo: 'RECURRENTE', creditoVigente: true } : { tipo: t, creditoVigente: false };
+  }
+
+  function hechos(cliente, analisis, tipoElegido, vivienda) {
+    const { tipo: tipoCliente, creditoVigente } = normalizarTipo(tipoElegido);
     const cp = cajaPiura(cliente);
     const ciiu = cliente.ciiu ? String(cliente.ciiu).padStart(4, '0') : null;
     const sinDeuda = cliente.numEntidades === 0;
@@ -67,7 +73,8 @@
       numEntidades: nEnt ?? null,
       entidadesSinCajaPiura: nEnt === null || nEnt === undefined || cp.tiene === null ? null : nEnt - (cp.tiene ? 1 : 0),
       tieneCajaPiura: cp.tiene,
-      paralelo: tipoCliente === 'RECURRENTE' && cp.tiene === true,
+      creditoVigente,
+      paralelo: creditoVigente,
       competenciaDirecta: cp.tiene === null ? null : cp.competencia.length > 0,
       entidadesCompetencia: cp.competencia,
       sinScore: cliente.score === null || cliente.score === undefined,
@@ -175,10 +182,11 @@
    * @param {object} opciones { tipoCliente, vivienda, region, hoy }
    */
   function evaluar(cliente, analisis, opciones = {}) {
-    const tipoCliente = opciones.tipoCliente || sugerirTipoCliente(cliente).tipo;
+    const tipoElegido = opciones.tipoCliente || sugerirTipoCliente(cliente).tipo;
+    const tipoCliente = normalizarTipo(tipoElegido).tipo;
     const hoy = opciones.hoy || new Date().toISOString().slice(0, 10);
     const vivienda = opciones.vivienda || null;
-    const h = hechos(cliente, analisis, tipoCliente, vivienda);
+    const h = hechos(cliente, analisis, tipoElegido, vivienda);
     const cat = Campanas.catalogo(opciones.region || Campanas.CONFIG.region);
     const orden = { CALIFICA: 0, REVISAR: 1, NO_CALIFICA: 2 };
 

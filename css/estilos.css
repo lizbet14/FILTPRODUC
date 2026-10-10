@@ -248,12 +248,12 @@ pre.texto-pdf { white-space: pre-wrap; font-size: 12px; background: var(--fondo)
 .resumen-prod { margin: 0; font-size: 14px; color: var(--tinta-2); }
 .resumen-prod b { color: var(--verde); font-size: 16px; }
 .filtros-cliente { display: flex; gap: 20px; flex-wrap: wrap; justify-content: flex-end; }
-.tipo-cliente { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; max-width: 300px; }
+.tipo-cliente { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; max-width: 440px; }
 .tipo-cliente small.pendiente { color: var(--ambar); font-weight: 700; }
 .nota-prod { margin: 0; font-size: 12.5px; background: var(--ambar-suave); color: var(--tinta-2); border-radius: 8px; padding: 8px 10px; border-left: 3px solid var(--ambar); }
 .tipo-cliente small { font-size: 12px; color: var(--tinta-3); text-align: right; }
 .etq-tipo { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--tinta-3); }
-.segmentado { display: inline-flex; background: var(--fondo); border: 1px solid var(--linea); border-radius: 10px; padding: 3px; }
+.segmentado { display: inline-flex; flex-wrap: wrap; background: var(--fondo); border: 1px solid var(--linea); border-radius: 10px; padding: 3px; }
 .segmentado button { border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 700; color: var(--tinta-2); padding: 6px 12px; border-radius: 7px; cursor: pointer; }
 .segmentado button.activo { background: var(--marca); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.18); }
 .prod-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -354,6 +354,8 @@ dialog::backdrop { background: rgba(20, 24, 30, .45); }
   .of-grande { font-size: 20px; }
   .tipo-cliente { align-items: flex-start; max-width: none; }
   .filtros-cliente { justify-content: flex-start; gap: 14px; }
+  .segmentado.seg-4 { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .segmentado.seg-4 button { text-align: center; }
   .tipo-cliente small { text-align: left; }
   .grafico svg { min-width: 640px; }
   .grafico::after { content: 'Desliza para ver todos los meses →'; display: block; font-size: 11px; color: var(--tinta-3); margin-top: 4px; }

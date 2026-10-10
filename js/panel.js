@@ -118,7 +118,14 @@
 
   // ---------- productos y campañas ----------
   const ESTADO_TXT = { CALIFICA: 'Califica', REVISAR: 'Falta un dato', NO_CALIFICA: 'No califica' };
-  const TIPOS_CLIENTE = [['NUEVO', 'Nuevo'], ['REACTIVADO', 'Reactivado'], ['RECURRENTE', 'Recurrente']];
+  const TIPOS_CLIENTE = [['NUEVO', 'Nuevo'], ['REACTIVADO', 'Reactivado'], ['RECURRENTE', 'Recurrente'], ['VIGENTE', 'Con crédito vigente']];
+  const TIPO_AYUDA = {
+    NUEVO: 'Nunca tuvo crédito en Caja Piura.',
+    REACTIVADO: 'Sin crédito vigente en Caja Piura hace 30 días o más.',
+    RECURRENTE: 'Canceló su crédito en Caja Piura hace menos de 30 días.',
+    VIGENTE: 'Tiene un crédito vigente en Caja Piura (propuesta paralela).'
+  };
+  const TIPO_TXT = Object.fromEntries(TIPOS_CLIENTE);
   const VIVIENDAS = [['PROPIA', 'Propia'], ['FAMILIAR', 'Familiar'], ['ALQUILADA', 'Alquilada']];
   const pctTxt = n => Number(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
 
@@ -149,7 +156,6 @@
         <div class="of-dato">
           <small>TEA mínima</small>
           <b class="num of-grande">${pctTxt(o.teaMin)}</b>
-          <span class="of-sub">${o.teaMax ? `máxima ${pctTxt(o.teaMax)}` : 'según tarifario'}</span>
         </div>
       </div>
       <p class="of-linea">${rango ? `Score ${score ?? '—'} → tramo <b>${rango}</b>` : 'Mismo monto y TEA para cualquier score'}${o.referencial ? ' · <b>referencial</b>' : ''}</p>
@@ -216,10 +222,10 @@
         <div class="filtros-cliente">
           <div class="tipo-cliente">
             <span class="etq-tipo">Tipo de cliente en Caja Piura</span>
-            <div class="segmentado" role="group" aria-label="Tipo de cliente">
+            <div class="segmentado seg-4" role="group" aria-label="Tipo de cliente">
               ${TIPOS_CLIENTE.map(([k, t]) => `<button type="button" data-tipo="${k}" class="${k === tipo ? 'activo' : ''}">${t}</button>`).join('')}
             </div>
-            <small>${reg.tipoCliente && reg.tipoCliente !== sug.tipo ? `Elegido por ti (sugerido: ${capital(sug.tipo)})` : 'Sugerido: ' + esc(sug.motivo)}</small>
+            <small>${esc(TIPO_AYUDA[tipo] || '')} ${reg.tipoCliente && reg.tipoCliente !== sug.tipo ? `<b>Elegido por ti</b> (sugerido: ${esc(TIPO_TXT[sug.tipo])}).` : `<b>Sugerido:</b> ${esc(sug.motivo)}`}</small>
           </div>
           <div class="tipo-cliente">
             <span class="etq-tipo">Vivienda del cliente</span>
