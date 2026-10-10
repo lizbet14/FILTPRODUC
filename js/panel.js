@@ -122,32 +122,81 @@
   const VIVIENDAS = [['PROPIA', 'Propia'], ['FAMILIAR', 'Familiar'], ['ALQUILADA', 'Alquilada']];
   const pctTxt = n => Number(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
 
-  function tarjetaProducto(ev) {
+  const sMonto = n => 'S/ ' + Number(n).toLocaleString('es-PE', { maximumFractionDigits: 0 });
+
+  function bloqueOferta(ev, score) {
+    const o = ev.oferta;
+    if (!o) return '';
+    if (o.montoMax === null) {
+      return `<div class="oferta oferta-vacia"><p>${esc(o.notaScore || 'No se pudo ubicar el tramo de la oferta.')}</p></div>`;
+    }
+    const tramo = o.tramoIdx >= 0 ? o.tramos[o.tramoIdx] : null;
+    const rango = tramo && !(tramo.scoreMin === 0 && tramo.scoreMax === 999) ? `${tramo.scoreMin}–${tramo.scoreMax}` : null;
+    const tabla = o.tramos.length > 1 ? `
+      <details class="tramos"><summary>Ver cuadro de tramos por score</summary>
+        <table class="compacta tabla-tramos">
+          <thead><tr><th>Score</th><th class="der">Monto máx.</th><th class="der">TEA mín.</th></tr></thead>
+          <tbody>${o.tramos.map((t, i) => `<tr class="${i === o.tramoIdx ? 'tramo-actual' : ''}">
+            <td class="num">${t.scoreMin}–${t.scoreMax}${i === o.tramoIdx ? ' <span class="tu-tramo">cliente</span>' : ''}</td>
+            <td class="der num">${sMonto(t.montoMax)}</td><td class="der num">${pctTxt(t.teaMin)}</td></tr>`).join('')}</tbody>
+        </table></details>` : '';
+    return `<div class="oferta">
+        <div class="of-dato">
+          <small>Monto máximo</small>
+          <b class="num of-grande">${sMonto(o.montoMax)}</b>
+          <span class="of-sub">desde ${sMonto(o.montoMin)}${o.limitadoPorTope ? ` · sin tope: ${sMonto(o.montoMaxTramo)}` : ''}</span>
+        </div>
+        <div class="of-dato">
+          <small>TEA mínima</small>
+          <b class="num of-grande">${pctTxt(o.teaMin)}</b>
+          <span class="of-sub">${o.teaMax ? `máxima ${pctTxt(o.teaMax)}` : 'según tarifario'}</span>
+        </div>
+      </div>
+      <p class="of-linea">${rango ? `Score ${score ?? '—'} → tramo <b>${rango}</b>` : 'Mismo monto y TEA para cualquier score'}${o.referencial ? ' · <b>referencial</b>' : ''}</p>
+      ${o.plazo ? `<p class="of-linea of-plazo">Plazo: ${esc(o.plazo)}</p>` : ''}
+      ${o.notaScore ? `<p class="nota-prod">${esc(o.notaScore)}</p>` : ''}
+      ${o.topesAplicados.map(t => `<p class="nota-prod"><b>Tope aplicado:</b> ${esc(t.texto)}</p>`).join('')}
+      ${o.teaNegociable !== null ? `<p class="nota-prod nota-info"><b>TEA negociable hasta ${pctTxt(o.teaNegociable)}.</b> ${esc(o.ajustes.map(a => a.texto).join(' '))}</p>` : ''}
+      ${o.siguiente ? `<p class="of-siguiente">▲ Con score ${o.siguiente.scoreMin} o más${o.siguiente.faltan > 0 ? ` (le faltan ${o.siguiente.faltan} puntos)` : ''}: hasta <b>${sMonto(o.siguiente.montoMax)}</b> con TEA desde <b>${pctTxt(o.siguiente.teaMin)}</b></p>` : ''}
+      ${tabla}`;
+  }
+
+  function tarjetaProducto(ev, score) {
     const p = ev.producto;
     const fallan = ev.detalle.filter(q => q.cumple === false);
     const faltan = ev.detalle.filter(q => q.cumple === null);
     const ok = ev.detalle.filter(q => q.cumple === true);
     const li = (q, cls) => `<li class="${cls}">${esc(q.texto)}</li>`;
+    const refs = ev.oferta ? ev.oferta.referencias : [];
     return `<article class="prod prod-${ev.estado}">
       <div class="prod-cab">
         <div><span class="seg">${esc(p.segmento)} · ${esc(p.tipo)}</span><h3>${esc(p.nombre)}</h3></div>
         <span class="estado e-${ev.estado}">${ESTADO_TXT[ev.estado]}</span>
       </div>
-      ${ev.nota && ev.estado !== 'NO_CALIFICA' ? `<p class="nota-prod">${esc(ev.nota)}</p>` : ''}
-      ${ev.estado !== 'NO_CALIFICA' && ev.tramo ? `<div class="oferta">
-          <div><small>Monto</small><b class="num">S/ ${ev.tramo.montoMin.toLocaleString('es-PE')} – ${ev.tramo.montoMax.toLocaleString('es-PE')}</b></div>
-          <div><small>TEA mínima</small><b class="num">${pctTxt(ev.tramo.teaMin)}</b></div>
-        </div>` : ''}
+      ${ev.estado !== 'NO_CALIFICA' ? bloqueOferta(ev, score) : ''}
       ${fallan.length ? `<ul class="requisitos">${fallan.map(q => li(q, 'no')).join('')}</ul>` : ''}
       ${faltan.length ? `<ul class="requisitos">${faltan.map(q => li(q, 'falta')).join('')}</ul>` : ''}
       ${ev.estado !== 'NO_CALIFICA' ? `
         <details class="prod-mas"><summary>${ok.length} requisito(s) cumplidos · ${ev.verificar.length} por verificar</summary>
           <ul class="requisitos">${ok.map(q => li(q, 'ok')).join('')}</ul>
           ${ev.verificar.length ? `<p class="verif-tit">Verificar en la evaluación:</p><ul class="requisitos">${ev.verificar.map(t => `<li class="verif">${esc(t)}</li>`).join('')}</ul>` : ''}
+          ${refs.length ? `<p class="verif-tit">Otros topes y condiciones de monto:</p><ul class="requisitos">${refs.map(r => `<li>${esc(r.texto)}</li>`).join('')}</ul>` : ''}
           ${(p.condiciones || []).length ? `<p class="verif-tit">Condiciones:</p><ul class="requisitos">${p.condiciones.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
           ${p.vigencia ? `<p class="vig">Vigente del ${fecha(p.vigencia.desde)} al ${fecha(p.vigencia.hasta)}</p>` : ''}
         </details>` : ''}
     </article>`;
+  }
+
+  function resumenMejores(evals) {
+    if (evals.filter(e => e.estado === 'CALIFICA').length < 2) return '';
+    const r = Productos.resumenOfertas(evals);
+    if (!r) return '';
+    const mm = r.mejorMonto, mt = r.mejorTasa;
+    return `<div class="mejores">
+      <div class="mejor"><small>Mayor monto disponible</small><b class="num">${sMonto(mm.oferta.montoMax)}</b><span>${esc(mm.producto.nombre)} · TEA desde ${pctTxt(mm.oferta.teaMin)}</span></div>
+      <div class="mejor"><small>Menor TEA disponible</small><b class="num">${pctTxt(mt.oferta.teaMin)}</b><span>${esc(mt.producto.nombre)} · hasta ${sMonto(mt.oferta.montoMax)}</span></div>
+      <p class="mejores-nota">Montos máximos según campaña y score. El monto final depende de la capacidad de pago evaluada.</p>
+    </div>`;
   }
 
   function seccionProductos(c, a, reg) {
@@ -181,9 +230,10 @@
           </div>
         </div>
       </div>
-      ${califica.length || revisar.length ? `<div class="prod-grid">${[...califica, ...revisar].map(tarjetaProducto).join('')}</div>`
+      ${resumenMejores(evals)}
+      ${califica.length || revisar.length ? `<div class="prod-grid">${[...califica, ...revisar].map(ev => tarjetaProducto(ev, c.score)).join('')}</div>`
         : '<div class="vacio">Con los datos del reporte no califica a ninguna campaña vigente.</div>'}
-      ${no.length ? `<details class="prod-no"><summary>No califica (${no.length}) · ver motivos</summary><div class="prod-grid">${no.map(tarjetaProducto).join('')}</div></details>` : ''}
+      ${no.length ? `<details class="prod-no"><summary>No califica (${no.length}) · ver motivos</summary><div class="prod-grid">${no.map(ev => tarjetaProducto(ev, c.score)).join('')}</div></details>` : ''}
     </section>`;
   }
 

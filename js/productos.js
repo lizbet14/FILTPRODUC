@@ -7,6 +7,8 @@
  *   CALIFICA     → cumple todos los criterios automáticos (quedan los "verificar")
  *   REVISAR      → falta algún dato en el reporte para decidir
  *   NO_CALIFICA  → incumple al menos un criterio
+ * Y la oferta: monto máximo y TEA mínima según el score, con los topes que
+ * correspondan a la situación del cliente (paralelo, vivienda, sin score...).
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory(require('./campanas.js'));
@@ -15,6 +17,7 @@
   'use strict';
 
   const RE_CAJA_PIURA = /\b(CMAC[\s-]*PIURA|CAJA[\s-]*PIURA)\b/i;
+  const RE_COMPETENCIA = /\b(CUSCO|HUANCAYO|AREQUIPA)\b/i; // competencia directa según ficha de Compra de Deuda
 
   /** ¿Toda la deuda estuvo en Normal en los últimos n meses? (meses sin calificación cuentan como válidos) */
   function normalUltimos(historial, n) {
@@ -29,12 +32,13 @@
 
   function cajaPiura(cliente) {
     const det = cliente.detalleEntidades || [];
-    if (!det.length) return { tiene: null, tuvo: null, deudaOtras: null };
+    if (!det.length) return { tiene: null, tuvo: null, deudaOtras: null, competencia: [] };
     const cp = det.filter(e => RE_CAJA_PIURA.test(e.entidad));
     const tiene = cp.some(e => e.vigente && (e.deuda > 0 || e.calificacion));
     const tuvo = cp.some(e => e.estado === 'YA_NO_REPORTA' || e.maxAnterior > 0);
     const deudaOtras = det.filter(e => e.vigente && !RE_CAJA_PIURA.test(e.entidad)).reduce((s, e) => s + (e.deuda || 0), 0);
-    return { tiene, tuvo, deudaOtras: +deudaOtras.toFixed(2) };
+    const competencia = det.filter(e => e.vigente && e.deuda > 0 && RE_COMPETENCIA.test(e.entidad)).map(e => e.entidad);
+    return { tiene, tuvo, deudaOtras: +deudaOtras.toFixed(2), competencia };
   }
 
   /** Tipo de cliente sugerido a partir del reporte (el asesor puede cambiarlo). */
@@ -63,6 +67,10 @@
       numEntidades: nEnt ?? null,
       entidadesSinCajaPiura: nEnt === null || nEnt === undefined || cp.tiene === null ? null : nEnt - (cp.tiene ? 1 : 0),
       tieneCajaPiura: cp.tiene,
+      paralelo: tipoCliente === 'RECURRENTE' && cp.tiene === true,
+      competenciaDirecta: cp.tiene === null ? null : cp.competencia.length > 0,
+      entidadesCompetencia: cp.competencia,
+      sinScore: cliente.score === null || cliente.score === undefined,
       deudaOtrasIfis: cp.deudaOtras,
       deudaTotal: cliente.deudaTotal ?? null,
       deudaVencida: cliente.deudaVencida ?? null,
@@ -99,11 +107,66 @@
     return (!p.vigencia.desde || hoy >= p.vigencia.desde) && (!p.vigencia.hasta || hoy <= p.vigencia.hasta);
   }
 
-  function tramoPara(p, score) {
-    const ts = p.tramos || [];
-    if (!ts.length) return null;
-    if (score === null || score === undefined) return ts.length === 1 && ts[0].scoreMin === 0 ? ts[0] : null;
-    return ts.find(t => score >= t.scoreMin && score <= t.scoreMax) || null;
+  function cumpleTodas(conds, h) {
+    return (conds || []).every(c => {
+      const v = h[c.campo];
+      if (v === null || v === undefined) return false;
+      const f = OPS[c.op];
+      return f ? !!f(v, c.valor) : false;
+    });
+  }
+
+  /**
+   * Oferta del cliente en una campaña:
+   *  montoMax / teaMin del tramo de su score, luego los topes que le apliquen.
+   */
+  function calcularOferta(p, h) {
+    const o = p.oferta;
+    if (!o || !(o.tramos || []).length) return null;
+    const tramos = o.tramos;
+    let idx = -1, referencial = false, notaScore = null;
+
+    if (h.sinScore) {
+      if (tramos.length === 1 && tramos[0].scoreMin === 0) idx = 0;
+      else if (o.sinScore && o.sinScore.tramo !== null && o.sinScore.tramo !== undefined) {
+        idx = o.sinScore.tramo; referencial = true; notaScore = o.sinScore.nota;
+      } else notaScore = 'Sin score: no se puede ubicar en un tramo.';
+    } else {
+      idx = tramos.findIndex(t => h.score >= t.scoreMin && h.score <= t.scoreMax);
+      if (idx < 0 && h.score < tramos[0].scoreMin) notaScore = `Score ${h.score} por debajo del mínimo del cuadro (${tramos[0].scoreMin}).`;
+    }
+    const base = idx >= 0 ? tramos[idx] : null;
+
+    const topesAplicados = (o.topes || []).filter(t => cumpleTodas(t.cuando, h));
+    let montoMax = base ? base.montoMax : null;
+    let plazo = o.plazo;
+    for (const t of topesAplicados) {
+      if (t.montoMax !== undefined && montoMax !== null) montoMax = Math.min(montoMax, t.montoMax);
+      if (t.plazo) plazo = t.plazo;
+    }
+    const limitadoPorTope = base && montoMax < base.montoMax;
+
+    const ajustes = (o.ajustesTea || []).filter(a => cumpleTodas(a.cuando, h));
+    const teaMin = base ? base.teaMin : null;
+    const teaNegociable = teaMin !== null && ajustes.length ? Math.max(0, teaMin + ajustes.reduce((s, a) => s + a.pp, 0)) : null;
+
+    // ¿Qué ganaría con un mejor score? (solo si el tope no lo anula)
+    let siguiente = null;
+    if (base && !h.sinScore) {
+      const sig = tramos.slice(idx + 1).find(t => t.montoMax > base.montoMax || t.teaMin < base.teaMin);
+      if (sig) {
+        const montoSig = topesAplicados.reduce((m, t) => (t.montoMax !== undefined ? Math.min(m, t.montoMax) : m), sig.montoMax);
+        if (montoSig > montoMax || sig.teaMin < base.teaMin) siguiente = { scoreMin: sig.scoreMin, montoMax: montoSig, teaMin: sig.teaMin, faltan: sig.scoreMin - h.score };
+      }
+    }
+
+    return {
+      montoMin: o.montoMin, montoMax, montoMaxTramo: base ? base.montoMax : null,
+      teaMin, teaMax: o.teaMax ?? null, teaNegociable, ajustes,
+      plazo, tramoIdx: idx, tramos, referencial, notaScore,
+      topesAplicados, limitadoPorTope, siguiente,
+      referencias: o.referencias || []
+    };
   }
 
   /**
@@ -133,15 +196,21 @@
       }
       const estado = detalle.some(d => d.cumple === false) ? 'NO_CALIFICA'
         : detalle.some(d => d.cumple === null) ? 'REVISAR' : 'CALIFICA';
-      let tramo = tramoPara(p, h.score);
-      let nota = null;
-      if (vivienda === 'ALQUILADA' && p.siAlquilada) {
-        nota = p.siAlquilada.nota;
-        if (tramo) tramo = { ...tramo, montoMax: Math.min(tramo.montoMax, p.siAlquilada.montoMax) };
-      }
-      return { producto: p, estado, detalle, tramo, nota, verificar: p.verificar || [] };
-    }).sort((a, b) => (orden[a.estado] - orden[b.estado]) || ((b.tramo ? b.tramo.montoMax : 0) - (a.tramo ? a.tramo.montoMax : 0)));
+      const oferta = calcularOferta(p, h);
+      return { producto: p, estado, detalle, oferta, verificar: p.verificar || [] };
+    }).sort((a, b) => (orden[a.estado] - orden[b.estado])
+      || ((b.oferta && b.oferta.montoMax || 0) - (a.oferta && a.oferta.montoMax || 0))
+      || ((a.oferta && a.oferta.teaMin || 99) - (b.oferta && b.oferta.teaMin || 99)));
   }
 
-  return { evaluar, hechos, sugerirTipoCliente, normalUltimos };
+  /** Mejor monto y mejor tasa entre las campañas que califican. */
+  function resumenOfertas(evals) {
+    const ok = evals.filter(e => e.estado === 'CALIFICA' && e.oferta && e.oferta.montoMax !== null);
+    if (!ok.length) return null;
+    const mejorMonto = ok.reduce((a, b) => (b.oferta.montoMax > a.oferta.montoMax ? b : a));
+    const mejorTasa = ok.reduce((a, b) => (b.oferta.teaMin < a.oferta.teaMin ? b : a));
+    return { mejorMonto, mejorTasa };
+  }
+
+  return { evaluar, hechos, sugerirTipoCliente, normalUltimos, calcularOferta, resumenOfertas };
 });
