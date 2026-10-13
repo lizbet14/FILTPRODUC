@@ -5,7 +5,7 @@
  */
 window.FILTPRODUC_CATALOGO = {
   "version": 1,
-  "actualizado": "2026-10-12T00:00:00-05:00",
+  "actualizado": "2026-10-13T04:01:07.003Z",
   "region": "CENTRO",
   "agencia": "Satipo",
   "campanas": [
@@ -61,8 +61,7 @@ window.FILTPRODUC_CATALOGO = {
           "campo": "antiguedadMeses",
           "op": ">=",
           "valor": 3,
-          "texto": "Experiencia mínima de 3 meses en el negocio",
-          "siFalta": "revisar"
+          "texto": "Experiencia mínima de 3 meses en el negocio"
         },
         {
           "campo": "esAgroPesca",
@@ -101,7 +100,9 @@ window.FILTPRODUC_CATALOGO = {
           {
             "texto": "Ampliación hasta el 100% del monto del producto (S/ 95,000) con 30% del capital cancelado y mora ≤ 8 días."
           }
-        ]
+        ],
+        "topes": [],
+        "ajustesTea": []
       },
       "condiciones": [
         "Cuota fija, fecha fija o C.E.P.",
@@ -173,7 +174,9 @@ window.FILTPRODUC_CATALOGO = {
           {
             "texto": "Paralelo a otro Crece Mujer hasta su límite de endeudamiento, sin % de amortización (01/09 al 31/12/2026)."
           }
-        ]
+        ],
+        "topes": [],
+        "ajustesTea": []
       },
       "condiciones": [
         "A sola firma",
@@ -290,7 +293,9 @@ window.FILTPRODUC_CATALOGO = {
           {
             "texto": "Paralelo a otro Al Toque hasta su límite de endeudamiento, sin % de amortización (01/09 al 31/12/2026)."
           }
-        ]
+        ],
+        "topes": [],
+        "ajustesTea": []
       },
       "condiciones": [
         "A sola firma",
@@ -371,7 +376,9 @@ window.FILTPRODUC_CATALOGO = {
           {
             "texto": "Ampliación de un Credifamilia con el 20% del capital pagado."
           }
-        ]
+        ],
+        "topes": [],
+        "ajustesTea": []
       },
       "condiciones": [
         "Un solo crédito por cliente",
@@ -405,8 +412,7 @@ window.FILTPRODUC_CATALOGO = {
           "campo": "antiguedadMeses",
           "op": ">=",
           "valor": 6,
-          "texto": "Mínimo 6 meses de antigüedad en la actividad",
-          "siFalta": "revisar"
+          "texto": "Mínimo 6 meses de antigüedad en la actividad"
         },
         {
           "campo": "score",
@@ -443,8 +449,7 @@ window.FILTPRODUC_CATALOGO = {
           "campo": "ingresoEstimadoMin",
           "op": ">=",
           "valor": 850,
-          "texto": "Ingreso mínimo familiar S/ 850 (referencia: ingreso estimado)",
-          "siFalta": "revisar"
+          "texto": "Ingreso mínimo familiar S/ 850 (referencia: ingreso estimado)"
         },
         {
           "campo": "vivienda",
@@ -502,7 +507,8 @@ window.FILTPRODUC_CATALOGO = {
           {
             "texto": "Primera cuota hasta 60 días después del desembolso, si el cliente lo solicita."
           }
-        ]
+        ],
+        "ajustesTea": []
       },
       "condiciones": [
         "Garantía Campaña \"Credifácil Consumo\" 5429",
@@ -565,8 +571,7 @@ window.FILTPRODUC_CATALOGO = {
           "campo": "ingresoEstimadoMin",
           "op": ">=",
           "valor": 850,
-          "texto": "Ingreso mínimo familiar S/ 850 (referencia: ingreso estimado)",
-          "siFalta": "revisar"
+          "texto": "Ingreso mínimo familiar S/ 850 (referencia: ingreso estimado)"
         }
       ],
       "verificar": [
@@ -618,7 +623,8 @@ window.FILTPRODUC_CATALOGO = {
             "texto": "Si sustenta ingresos solo con declaración jurada u otros documentos: hasta S/ 6,000.",
             "montoMax": 6000
           }
-        ]
+        ],
+        "ajustesTea": []
       },
       "condiciones": [
         "Garantía Campaña \"Credifácil Consumo\" 5429",
@@ -712,7 +718,8 @@ window.FILTPRODUC_CATALOGO = {
           {
             "texto": "El paralelo se descuenta de la boleta y se desembolsa por el mismo producto (071)."
           }
-        ]
+        ],
+        "ajustesTea": []
       },
       "condiciones": [
         "Garantía Campaña \"Credifácil Consumo\" 5429"
@@ -817,7 +824,8 @@ window.FILTPRODUC_CATALOGO = {
           {
             "texto": "Permite capital adicional (12 o 24 meses más al plazo pendiente). Respetar el escalonamiento interno."
           }
-        ]
+        ],
+        "topes": []
       },
       "condiciones": [
         "Frecuencia semanal, quincenal o mensual",
@@ -928,7 +936,8 @@ window.FILTPRODUC_CATALOGO = {
           {
             "texto": "Permite capital adicional (12 o 24 meses más al plazo pendiente). Respetar el escalonamiento interno."
           }
-        ]
+        ],
+        "topes": []
       },
       "condiciones": [
         "Frecuencia semanal, quincenal o mensual",
