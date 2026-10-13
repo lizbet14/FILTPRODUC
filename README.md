@@ -32,6 +32,18 @@ Calibrado con el **"Reporte de Crédito" de Sentinel / Experian** (PDF descargad
    - **Corregir datos** manualmente si el lector no encontró algo; el análisis se recalcula.
    - **Productos y campañas**: a cuáles califica, con **monto máximo y TEA mínima** según su score y los topes de su situación (paralelo, vivienda alquilada, sin score), cuadro de tramos y cuánto subiría con mejor score.
 
+## Panel de administración (`admin.html`)
+
+Acceso con usuario **LBARZOLA** y su clave (en el repositorio solo está el *hash* PBKDF2-SHA256 de la clave, en `js/admin-config.js`).
+
+- Edita cada cláusula de cada campaña: datos generales y vigencia, activar/desactivar, **requisitos** (dato, condición, valor, texto, a qué tipo de cliente aplica, qué hacer si falta el dato), **verificaciones**, **oferta por tramos de score** (monto máximo y TEA mínima), cliente sin score, **topes automáticos**, **ajustes de TEA**, referencias y condiciones.
+- Crear, duplicar y eliminar campañas. Validación antes de guardar (tramos ordenados y sin cruces, valores vacíos, etc.).
+- **Guardar en este navegador**: vista previa inmediata en el calificador de ese equipo.
+- **Publicar para todos**: actualiza `js/campanas-data.js` en GitHub (la web se actualiza en 1–2 minutos). Requiere un token *fine-grained* de GitHub con permiso *Contents: Read and write* solo sobre este repositorio; se guarda **cifrado con la clave** en el navegador del administrador.
+- Respaldo: descargar e importar el catálogo en JSON. Cambiar clave desde el panel.
+
+> Seguridad: la clave protege el acceso al panel; lo que realmente impide cambiar la web publicada es el token de GitHub, que solo tiene el administrador.
+
 ## Estructura
 
 | Archivo | Para qué sirve |
@@ -42,7 +54,10 @@ Calibrado con el **"Reporte de Crédito" de Sentinel / Experian** (PDF descargad
 | `js/sentinel-experian.js` | Lector del formato real "Reporte de Crédito" Sentinel/Experian |
 | `js/sentinel-parser.js` | Detecta el formato; lector genérico de respaldo para otros formatos |
 | `js/analisis.js` | Perfil del RUC, análisis del historial de deuda y alertas |
-| `js/campanas.js` | Catálogo de campañas: solo criterios de calificación y condiciones (región por defecto: CENTRO) |
+| `js/campanas-data.js` | **Datos** del catálogo de campañas (lo actualiza el panel de administración) |
+| `js/campanas.js` | Lee el catálogo publicado o los cambios guardados en el navegador |
+| `admin.html`, `js/admin.js`, `css/admin.css` | Panel de administración |
+| `js/admin-config.js` | Usuario y hash de la clave de administración |
 | `js/score-visual.js` | Niveles de score, medidor, animaciones y confeti |
 | `js/productos.js` | Motor de calificación (tipo de cliente, ventanas de calificación, tramos por score) |
 | `vendor/pdfjs/` | pdf.js (Mozilla, Apache-2.0) incluido para no depender de CDNs |

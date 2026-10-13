@@ -388,6 +388,7 @@
         ${tarjetaSiguienteNivel(c, a, reg)}
       </section>
 
+      ${Campanas.usaCambiosLocales() ? `<div class="aviso-local">Estás viendo <b>cambios del catálogo guardados solo en este navegador</b> (sin publicar). <a href="admin.html">Ir al panel de administración</a></div>` : ''}
       ${seccionProductos(c, a, reg)}
 
       <div class="rejilla">

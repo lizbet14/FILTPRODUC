@@ -402,3 +402,8 @@ th.centro, td.centro { text-align: center; padding-left: 12px; }
   body { background: #fff; }
   .tarjeta, .kpi { box-shadow: none; border: 1px solid #ddd; }
 }
+
+/* ---------- aviso de catálogo local ---------- */
+.aviso-local { background: var(--acento-suave); border: 1px solid var(--acento); color: var(--tinta); border-radius: 10px; padding: 10px 14px; font-size: 13.5px; margin-bottom: 12px; }
+.aviso-local a { font-weight: 700; }
+.pie a { color: var(--tinta-3); }
