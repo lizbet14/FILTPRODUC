@@ -360,7 +360,8 @@
       let msg = `GitHub respondió ${r.status}`;
       try { const j = await r.json(); if (j.message) msg += `: ${j.message}`; } catch (e) { /* */ }
       if (r.status === 401) msg = 'El token no es válido o venció. Configúralo de nuevo en Más → Configurar publicación.';
-      if (r.status === 403 || r.status === 404) msg += '. Revisa que el token tenga permiso "Contents: Read and write" sobre FILTPRODUC.';
+      else if (r.status === 403 && /not accessible by personal access token/i.test(msg)) msg = 'El token puede leer pero no escribir. En GitHub edita el token y pon "Contenidos" (Contents) en "Lectura y escritura" (Read and write), con el repositorio FILTPRODUC marcado. No hace falta volver a pegarlo.';
+      else if (r.status === 403 || r.status === 404) msg += '. Revisa que el token tenga "Contenidos: Lectura y escritura" sobre FILTPRODUC.';
       throw new Error(msg);
     }
     return r.json();
@@ -449,7 +450,7 @@
       localStorage.setItem(CLAVE_TOKEN, JSON.stringify(await cifrarToken(t, S.clave)));
       $('#dlgToken').close();
       pintarEstado();
-      aviso('Publicación configurada.');
+      aviso('Token guardado. Verifica que en GitHub tenga "Contenidos: Lectura y escritura"; la primera publicación lo confirmará.');
     } catch (e) {
       S.token = anterior;
       err.textContent = e.message;
