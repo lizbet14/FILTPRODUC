@@ -5,7 +5,7 @@
  */
 window.FILTPRODUC_CATALOGO = {
   "version": 1,
-  "actualizado": "2026-10-13T04:01:07.003Z",
+  "actualizado": "2026-10-18T01:07:38.927Z",
   "region": "CENTRO",
   "agencia": "Satipo",
   "campanas": [
@@ -632,7 +632,7 @@ window.FILTPRODUC_CATALOGO = {
       ]
     },
     {
-      "activa": true,
+      "activa": false,
       "id": "credifacil-planilla",
       "nombre": "Credifácil Navideño · Descuento por Planilla",
       "segmento": "Consumo",
