@@ -184,7 +184,8 @@
     perfil: { etq: 'Perfil del cliente', tipo: 'lista', opciones: [['NEGOCIO', 'Con negocio (Empresarial)'], ['EMPRESA', 'Empresa (RUC 20)'], ['SERVICIOS', 'Sin negocio (Consumo)'], ['SIN_RUC', 'Sin RUC']] },
     tipoCliente: { etq: 'Tipo de cliente', tipo: 'lista', opciones: [['NUEVO', 'Nuevo'], ['REACTIVADO', 'Reactivado'], ['RECURRENTE', 'Recurrente']] },
     vivienda: { etq: 'Vivienda', tipo: 'lista', opciones: [['PROPIA', 'Propia'], ['FAMILIAR', 'Familiar'], ['ALQUILADA', 'Alquilada']] },
-    genero: { etq: 'Género', tipo: 'lista', opciones: [['FEMENINO', 'Femenino'], ['MASCULINO', 'Masculino']] }
+    genero: { etq: 'Género', tipo: 'lista', opciones: [['FEMENINO', 'Mujer'], ['MASCULINO', 'Varón']] },
+    destino: { etq: 'Destino del crédito', tipo: 'lista', opciones: [['CAPITAL_TRABAJO', 'Capital de trabajo'], ['ACTIVO_FIJO', 'Activo fijo']] }
   };
   const OPS = {
     numero: [['>=', 'mayor o igual a'], ['<=', 'menor o igual a'], ['>', 'mayor a'], ['<', 'menor a'], ['==', 'igual a']],

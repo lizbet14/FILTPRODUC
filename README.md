@@ -25,12 +25,12 @@ Calibrado con el **"Reporte de Crédito" de Sentinel / Experian** (PDF descargad
 2. **Panel del cliente** (`panel.html`):
    - **Medidor de score** con aguja animada y número que cuenta, 5 niveles (Muy bajo <477 · Bajo 477–597 · Medio 598–699 · Bueno 700–799 · Excelente 800+), **lluvia de confeti** con 800 o más y **barra al siguiente nivel** con las mejoras de oferta que obtendría.
    - Semáforo por calificación SBS según el orden SBS (NOR verde · CPP amarillo · DEF naranja · DUD rojo · PER negro), N° de entidades (IFIs), deuda total, endeudamiento máximo e ingreso estimado.
-   - Filtros del asesor: **perfil Empresarial o Consumo** (Empresarial = tiene negocio aunque no figure con RUC/RUS activo; manda sobre el dato del RUC), tipo de cliente (nuevo, reactivado, recurrente o **con crédito vigente**, que activa las condiciones de crédito paralelo) y vivienda (propia, familiar, alquilada).
+   - Filtros del asesor: **perfil Empresarial o Consumo** (Empresarial = tiene negocio aunque no figure con RUC/RUS activo; manda sobre el dato del RUC), tipo de cliente (nuevo, reactivado, recurrente o **con crédito vigente**, que activa las condiciones de crédito paralelo), vivienda (propia, familiar, alquilada), **género** (mujer/varón, tomado del reporte y corregible; limita a Crece Mujer) y **destino del crédito** (capital de trabajo o activo fijo; p. ej. Contigo MyPerú solo financia capital de trabajo).
    - **Perfil del RUC**: persona con negocio, solo presta servicios, empresa (RUC 20) o sin RUC; estado, condición, actividad y antigüedad.
    - **Historial de endeudamiento**: gráfico mensual con semáforo, tendencia, variación, máximo y promedio.
    - **Detalle por entidad** y **alertas** para el asesor (CPP o peor, deuda vencida, castigos, judicial, sobreendeudamiento, RUC no activo…).
    - **Corregir datos** manualmente si el lector no encontró algo; el análisis se recalcula.
-   - **Productos y campañas**: a cuáles califica, con **monto máximo y TEA mínima** según su score y los topes de su situación (paralelo, vivienda alquilada, sin score), cuadro de tramos y cuánto subiría con mejor score.
+   - **Productos y campañas**: a cuáles califica, con **monto máximo y TEA mínima** según su score y los topes de su situación (paralelo, vivienda alquilada, sin score), cuadro de tramos y cuánto subiría con mejor score. Diseño con encabezado de resumen (anillo de campañas que califica), tarjetas por segmento (Empresarial azul, Consumo ámbar), cintas de *Mayor monto* y *Menor TEA*, barra de tramos y destinos que financia cada campaña.
 
 ## Panel de administración (`admin.html`)
 

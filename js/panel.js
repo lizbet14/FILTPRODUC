@@ -111,9 +111,9 @@
     const ls = c.lineasCredito || [];
     if (!ls.length) return '';
     return `<h3 class="subtitulo">Líneas de crédito</h3>
-      <table class="compacta"><thead><tr><th>Institución</th><th>Tipo</th><th class="der">Aprobada</th><th class="der">Utilizada</th><th class="der">Disponible</th></tr></thead>
+      <div class="tabla-scroll"><table class="compacta"><thead><tr><th>Institución</th><th>Tipo</th><th class="der">Aprobada</th><th class="der">Utilizada</th><th class="der">Disponible</th></tr></thead>
       <tbody>${ls.map(l => `<tr><td>${esc(l.institucion)}</td><td>${esc(l.tipo === 'TCO' ? 'Tarjeta consumo' : l.tipo)}</td>
-        <td class="der num">${soles(l.aprobada)}</td><td class="der num">${soles(l.utilizada)}</td><td class="der num">${soles(l.noUtilizada)}</td></tr>`).join('')}</tbody></table>`;
+        <td class="der num">${soles(l.aprobada)}</td><td class="der num">${soles(l.utilizada)}</td><td class="der num">${soles(l.noUtilizada)}</td></tr>`).join('')}</tbody></table></div>`;
   }
 
   // ---------- productos y campañas ----------
@@ -133,6 +133,46 @@
 
   const sMonto = n => 'S/ ' + Number(n).toLocaleString('es-PE', { maximumFractionDigits: 0 });
 
+  const GENEROS = [['FEMENINO', 'Mujer'], ['MASCULINO', 'Varón']];
+  const GENERO_TXT = Object.fromEntries(GENEROS);
+  const DESTINOS = [['CAPITAL_TRABAJO', 'Capital de trabajo'], ['ACTIVO_FIJO', 'Activo fijo']];
+  const DESTINO_TXT = Object.fromEntries(DESTINOS);
+  const sMil = n => n >= 1000 ? 'S/ ' + Number(n / 1000).toLocaleString('es-PE', { maximumFractionDigits: 1 }) + ' mil' : sMonto(n);
+
+  // Íconos (trazo, 24×24)
+  const ICO = {
+    perfil: '<path d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9 8V5h6v3"/><path d="M4 13h16"/>',
+    tipo: '<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="m16 11 2 2 4-4"/>',
+    vivienda: '<path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+    genero: '<circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/>',
+    destino: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+    empresarial: '<path d="M3 9.5 5 4h14l2 5.5"/><path d="M3 9.5a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12.5V20h14v-7.5"/><path d="M10 20v-4h4v4"/>',
+    consumo: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M16 15h2"/>',
+    monto: '<path d="M12 2v20"/><path d="M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+    tasa: '<path d="m19 5-14 14"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+    check: '<path d="m5 12 5 5 9-10"/>'
+  };
+  const ico = (k, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k]}</svg>`;
+  const ESTADO_ICO = { CALIFICA: '✓ ', REVISAR: '? ', NO_CALIFICA: '✕ ' };
+
+  /** Barra de tramos de score: cada tramo con su monto, el del cliente resaltado. */
+  function barraTramos(o) {
+    if (!o.tramos || o.tramos.length < 2) return '';
+    return `<div class="tramo-barra" role="img" aria-label="Tramos de score">${o.tramos.map((t, i) => `
+      <span class="tb${i === o.tramoIdx ? ' tb-actual' : ''}${o.tramoIdx >= 0 && i < o.tramoIdx ? ' tb-pasado' : ''}" title="Score ${t.scoreMin}–${t.scoreMax}: hasta ${sMonto(t.montoMax)} · TEA ${pctTxt(t.teaMin)}">
+        <b>${sMil(t.montoMax)}</b><i>${t.scoreMin}+</i>
+      </span>`).join('')}</div>`;
+  }
+
+  function chipsDestino(p, destino) {
+    const ds = Productos.destinosDe(p);
+    if (!ds.length) return '';
+    return `<div class="destinos">${DESTINOS.map(([k, t]) => {
+      const si = ds.includes(k);
+      return `<span class="dchip ${si ? 'dchip-si' : 'dchip-no'}${destino === k ? ' dchip-elegido' : ''}">${si ? '✓' : '✕'} ${t}</span>`;
+    }).join('')}</div>`;
+  }
+
   function bloqueOferta(ev, score) {
     const o = ev.oferta;
     if (!o) return '';
@@ -150,18 +190,19 @@
             <td class="der num">${sMonto(t.montoMax)}</td><td class="der num">${pctTxt(t.teaMin)}</td></tr>`).join('')}</tbody>
         </table></details>` : '';
     return `<div class="oferta">
-        <div class="of-dato">
+        <div class="of-principal">
           <small>Monto máximo</small>
           <b class="num of-grande">${sMonto(o.montoMax)}</b>
           <span class="of-sub">desde ${sMonto(o.montoMin)}${o.limitadoPorTope ? ` · sin tope: ${sMonto(o.montoMaxTramo)}` : ''}</span>
         </div>
-        <div class="of-dato">
+        <div class="of-tea">
           <small>TEA mínima</small>
-          <b class="num of-grande">${pctTxt(o.teaMin)}</b>
+          <b class="num">${pctTxt(o.teaMin)}</b>
         </div>
       </div>
-      <p class="of-linea">${rango ? `Score ${score ?? '—'} → tramo <b>${rango}</b>` : 'Mismo monto y TEA para cualquier score'}${o.referencial ? ' · <b>referencial</b>' : ''}</p>
-      ${o.plazo ? `<p class="of-linea of-plazo">Plazo: ${esc(o.plazo)}</p>` : ''}
+      ${barraTramos(o)}
+      <p class="of-linea">${rango ? `Score <b class="num">${score ?? '—'}</b> → tramo <b class="num">${rango}</b>` : 'Mismo monto y TEA para cualquier score'}${o.referencial ? ' · <b>referencial</b>' : ''}</p>
+      ${o.plazo ? `<p class="of-linea of-plazo">⏱ ${esc(o.plazo)}</p>` : ''}
       ${o.notaScore ? `<p class="nota-prod">${esc(o.notaScore)}</p>` : ''}
       ${o.topesAplicados.map(t => `<p class="nota-prod"><b>Tope aplicado:</b> ${esc(t.texto)}</p>`).join('')}
       ${o.teaNegociable !== null ? `<p class="nota-prod nota-info"><b>TEA negociable hasta ${pctTxt(o.teaNegociable)}.</b> ${esc(o.ajustes.map(a => a.texto).join(' '))}</p>` : ''}
@@ -169,20 +210,26 @@
       ${tabla}`;
   }
 
-  function tarjetaProducto(ev, score) {
+  function tarjetaProducto(ev, score, extra = {}) {
     const p = ev.producto;
     const fallan = ev.detalle.filter(q => q.cumple === false);
     const faltan = ev.detalle.filter(q => q.cumple === null);
     const ok = ev.detalle.filter(q => q.cumple === true);
     const li = (q, cls) => `<li class="${cls}">${esc(q.texto)}</li>`;
     const refs = ev.oferta ? ev.oferta.referencias : [];
-    return `<article class="prod prod-${ev.estado}">
-      <div class="prod-cab">
-        <div><span class="seg">${esc(p.segmento)} · ${esc(p.tipo)}</span><h3>${esc(p.nombre)}</h3></div>
-        <span class="estado e-${ev.estado}">${ESTADO_TXT[ev.estado]}</span>
+    const consumo = /consumo/i.test(p.segmento || '');
+    const cintas = [extra.mayorMonto ? `<span class="cinta cinta-monto">★ Mayor monto</span>` : '', extra.menorTea ? `<span class="cinta cinta-tea">↓ Menor TEA</span>` : ''].join('');
+    return `<article class="prod prod-${ev.estado} ${consumo ? 'seg-consumo' : 'seg-empresarial'}${extra.animar ? ' anim' : ''}" style="--i:${extra.i || 0}">
+      <div class="prod-banda">
+        <span class="prod-ico">${ico(consumo ? 'consumo' : 'empresarial')}</span>
+        <div class="prod-tit"><span class="seg">${esc(p.segmento)} · ${esc(p.tipo)}</span><h3>${esc(p.nombre)}</h3></div>
+        <span class="estado e-${ev.estado}">${ESTADO_ICO[ev.estado]}${ESTADO_TXT[ev.estado]}</span>
       </div>
+      <div class="prod-cuerpo">
+      ${cintas ? `<div class="cintas">${cintas}</div>` : ''}
       ${ev.negocioSinRuc && ev.estado !== 'NO_CALIFICA' ? '<p class="nota-prod nota-info"><b>Negocio no registrado en su RUC/RUS.</b> Califica por el perfil Empresarial que elegiste: verifica el negocio en campo.</p>' : ''}
       ${ev.estado !== 'NO_CALIFICA' ? bloqueOferta(ev, score) : ''}
+      ${chipsDestino(p, extra.destino)}
       ${fallan.length ? `<ul class="requisitos">${fallan.map(q => li(q, 'no')).join('')}</ul>` : ''}
       ${faltan.length ? `<ul class="requisitos">${faltan.map(q => li(q, 'falta')).join('')}</ul>` : ''}
       ${ev.estado !== 'NO_CALIFICA' ? `
@@ -193,18 +240,27 @@
           ${(p.condiciones || []).length ? `<p class="verif-tit">Condiciones:</p><ul class="requisitos">${p.condiciones.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
           ${p.vigencia ? `<p class="vig">Vigente del ${fecha(p.vigencia.desde)} al ${fecha(p.vigencia.hasta)}</p>` : ''}
         </details>` : ''}
+      </div>
     </article>`;
   }
 
-  function resumenMejores(evals) {
-    if (evals.filter(e => e.estado === 'CALIFICA').length < 2) return '';
-    const r = Productos.resumenOfertas(evals);
+  function resumenMejores(r) {
     if (!r) return '';
     const mm = r.mejorMonto, mt = r.mejorTasa;
     return `<div class="mejores">
-      <div class="mejor"><small>Mayor monto disponible</small><b class="num">${sMonto(mm.oferta.montoMax)}</b><span>${esc(mm.producto.nombre)} · TEA desde ${pctTxt(mm.oferta.teaMin)}</span></div>
-      <div class="mejor"><small>Menor TEA disponible</small><b class="num">${pctTxt(mt.oferta.teaMin)}</b><span>${esc(mt.producto.nombre)} · hasta ${sMonto(mt.oferta.montoMax)}</span></div>
+      <div class="mejor mejor-monto"><span class="mejor-ico">${ico('monto')}</span><div><small>Mayor monto disponible</small><b class="num">${sMonto(mm.oferta.montoMax)}</b><span>${esc(mm.producto.nombre)} · TEA desde ${pctTxt(mm.oferta.teaMin)}</span></div></div>
+      <div class="mejor mejor-tea"><span class="mejor-ico">${ico('tasa')}</span><div><small>Menor TEA disponible</small><b class="num">${pctTxt(mt.oferta.teaMin)}</b><span>${esc(mt.producto.nombre)} · hasta ${sMonto(mt.oferta.montoMax)}</span></div></div>
       <p class="mejores-nota">Montos máximos según campaña y score. El monto final depende de la capacidad de pago evaluada.</p>
+    </div>`;
+  }
+
+  /** Anillo con la proporción de campañas a las que califica. */
+  function anilloCalifica(n, total) {
+    const r = 40, C = 2 * Math.PI * r, f = total ? n / total : 0;
+    return `<div class="hero-anillo" aria-hidden="true">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="${r}" class="an-fondo"/>
+        <circle cx="50" cy="50" r="${r}" class="an-valor" stroke-dasharray="${(C * f).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/></svg>
+      <div class="an-txt"><b class="num">${n}</b><span>de ${total}</span></div>
     </div>`;
   }
 
@@ -213,7 +269,9 @@
     const tipoCliente = reg.tipoCliente || Productos.sugerirTipoCliente(c).tipo;
     const vivienda = reg.vivienda || null;
     const actividad = reg.actividad !== undefined ? reg.actividad : Productos.sugerirActividad(a).actividad;
-    return { tipoCliente, vivienda, actividad };
+    const genero = reg.genero || c.genero || null;
+    const destino = reg.destino || null;
+    return { tipoCliente, vivienda, actividad, genero, destino };
   }
 
   // ---------- score: medidor, nivel y siguiente nivel ----------
@@ -306,48 +364,79 @@
     </div>`;
   }
 
+  /** Nombres de las campañas que limita un dato (para explicar el filtro). */
+  function limitadas(campo) {
+    return Campanas.catalogo().filter(p => (p.requisitos || []).some(r => r.campo === campo)).map(p => p.nombre);
+  }
+  const listaNombres = xs => xs.length <= 1 ? xs.join('') : xs.slice(0, -1).join(', ') + ' y ' + xs[xs.length - 1];
+
+  function grupoFiltro(icono, titulo, botones, ayuda, extraCls = '') {
+    return `<div class="filtro">
+      <span class="etq-tipo">${ico(icono)}${titulo}</span>
+      <div class="segmentado ${extraCls}" role="group" aria-label="${titulo}">${botones}</div>
+      ${ayuda}
+    </div>`;
+  }
+
   function seccionProductos(c, a, reg) {
     const sug = Productos.sugerirTipoCliente(c);
     const sugAct = Productos.sugerirActividad(a);
-    const { tipoCliente: tipo, vivienda, actividad } = opcionesFiltro(c, a, reg);
-    const evals = Productos.evaluar(c, a, { tipoCliente: tipo, vivienda, actividad });
+    const op = opcionesFiltro(c, a, reg);
+    const { tipoCliente: tipo, vivienda, actividad, genero, destino } = op;
+    const evals = Productos.evaluar(c, a, op);
     const califica = evals.filter(e => e.estado === 'CALIFICA');
     const revisar = evals.filter(e => e.estado === 'REVISAR');
     const no = evals.filter(e => e.estado === 'NO_CALIFICA');
-    return `<section class="tarjeta productos">
-      <div class="prod-top">
-        <div>
+    const mejores = califica.length >= 2 ? Productos.resumenOfertas(evals) : null;
+    const animar = ScoreVisual.efectosActivos();
+    const botones = (lista, attr, actual) => lista.map(([k, t]) => `<button type="button" data-${attr}="${k}" class="${k === actual ? 'activo' : ''}" aria-pressed="${k === actual}">${t}</button>`).join('');
+
+    const conGenero = limitadas('genero');
+    const conDestino = Campanas.catalogo().filter(p => { const d = Productos.destinosDe(p); return d.length === 1; }).map(p => p.nombre);
+    const ayudaGenero = genero
+      ? `<small>${reg.genero && c.genero && reg.genero !== c.genero ? `<b>Elegido por ti</b> (reporte: ${esc(GENERO_TXT[c.genero])}).` : reg.genero && !c.genero ? '<b>Elegido por ti.</b>' : '<b>Según el reporte.</b>'}${conGenero.length ? ` Solo limita a ${esc(listaNombres(conGenero))}.` : ''}</small>`
+      : `<small class="pendiente">Elígelo${conGenero.length ? `: ${esc(listaNombres(conGenero))} es solo para mujeres` : ''}.</small>`;
+    const ayudaDestino = actividad === 'CONSUMO'
+      ? '<small>Solo aplica a créditos empresariales.</small>'
+      : destino
+        ? `<small>${esc(DESTINO_TXT[destino])}: ${destino === 'ACTIVO_FIJO' && conDestino.length ? `${esc(listaNombres(conDestino))} no lo financia.` : 'lo financian las campañas empresariales marcadas.'}</small>`
+        : `<small class="pendiente">Elígelo${conDestino.length ? `: ${esc(listaNombres(conDestino))} solo financia capital de trabajo` : ''}.</small>`;
+
+    let i = 0;
+    const tarjeta = ev => tarjetaProducto(ev, c.score, {
+      i: i++, animar, destino,
+      mayorMonto: mejores && mejores.mejorMonto === ev,
+      menorTea: mejores && mejores.mejorTasa === ev
+    });
+
+    return `<section class="tarjeta productos${animar ? ' animar' : ''}">
+      <header class="prod-hero">
+        <div class="hero-txt">
+          <span class="hero-etq">Región ${esc(Campanas.CONFIG.region)} · Agencia ${esc(Campanas.CONFIG.agencia)}</span>
           <h2>Productos y campañas a los que accede</h2>
-          <p class="resumen-prod"><b class="num">${califica.length}</b> de ${evals.length} califican${revisar.length ? ` · <b class="num">${revisar.length}</b> con datos por revisar` : ''} · Región ${esc(Campanas.CONFIG.region)} (agencia ${esc(Campanas.CONFIG.agencia)})</p>
+          <p class="resumen-prod">${califica.length ? `¡Califica a <b class="num">${califica.length}</b> de ${evals.length} campañas vigentes!` : `No califica a ninguna de las ${evals.length} campañas vigentes con estos filtros.`}</p>
+          <div class="hero-stats">
+            <span class="hs hs-ok"><b class="num">${califica.length}</b> califican</span>
+            ${revisar.length ? `<span class="hs hs-rev"><b class="num">${revisar.length}</b> por revisar</span>` : ''}
+            <span class="hs hs-no"><b class="num">${no.length}</b> no califican</span>
+          </div>
         </div>
-      </div>
+        ${anilloCalifica(califica.length, evals.length)}
+      </header>
       <div class="filtros-cliente">
-          <div class="tipo-cliente">
-            <span class="etq-tipo">Perfil del cliente</span>
-            <div class="segmentado" role="group" aria-label="Perfil del cliente">
-              ${ACTIVIDADES.map(([k, t]) => `<button type="button" data-actividad="${k}" class="${k === actividad ? 'activo' : ''}">${t}</button>`).join('')}
-            </div>
-            <small class="${actividad ? '' : 'pendiente'}">${actividad ? esc(ACTIVIDAD_AYUDA[actividad]) + ' ' : ''}${reg.actividad !== undefined && reg.actividad !== sugAct.actividad ? `<b>Elegido por ti</b>${sugAct.actividad ? ` (según RUC: ${esc(capital(sugAct.actividad))})` : ''}.` : `<b>${actividad ? 'Sugerido:' : 'Elígelo:'}</b> ${esc(sugAct.motivo)}`}</small>
-          </div>
-          <div class="tipo-cliente">
-            <span class="etq-tipo">Tipo de cliente en Caja Piura</span>
-            <div class="segmentado seg-4" role="group" aria-label="Tipo de cliente">
-              ${TIPOS_CLIENTE.map(([k, t]) => `<button type="button" data-tipo="${k}" class="${k === tipo ? 'activo' : ''}">${t}</button>`).join('')}
-            </div>
-            <small>${esc(TIPO_AYUDA[tipo] || '')} ${reg.tipoCliente && reg.tipoCliente !== sug.tipo ? `<b>Elegido por ti</b> (sugerido: ${esc(TIPO_TXT[sug.tipo])}).` : `<b>Sugerido:</b> ${esc(sug.motivo)}`}</small>
-          </div>
-          <div class="tipo-cliente">
-            <span class="etq-tipo">Vivienda del cliente</span>
-            <div class="segmentado" role="group" aria-label="Vivienda del cliente">
-              ${VIVIENDAS.map(([k, t]) => `<button type="button" data-vivienda="${k}" class="${k === vivienda ? 'activo' : ''}">${t}</button>`).join('')}
-            </div>
-            <small class="${vivienda ? '' : 'pendiente'}">${vivienda ? (vivienda === 'ALQUILADA' ? 'Varias campañas exigen casa propia o familiar.' : 'Cumple domicilio estable.') : 'Elígela: algunas campañas no aceptan vivienda alquilada.'}</small>
-          </div>
+        ${grupoFiltro('perfil', 'Perfil del cliente', botones(ACTIVIDADES, 'actividad', actividad),
+          `<small class="${actividad ? '' : 'pendiente'}">${actividad ? esc(ACTIVIDAD_AYUDA[actividad]) + ' ' : ''}${reg.actividad !== undefined && reg.actividad !== sugAct.actividad ? `<b>Elegido por ti</b>${sugAct.actividad ? ` (según RUC: ${esc(capital(sugAct.actividad))})` : ''}.` : `<b>${actividad ? 'Sugerido:' : 'Elígelo:'}</b> ${esc(sugAct.motivo)}`}</small>`)}
+        ${grupoFiltro('tipo', 'Tipo de cliente en Caja Piura', botones(TIPOS_CLIENTE, 'tipo', tipo),
+          `<small>${esc(TIPO_AYUDA[tipo] || '')} ${reg.tipoCliente && reg.tipoCliente !== sug.tipo ? `<b>Elegido por ti</b> (sugerido: ${esc(TIPO_TXT[sug.tipo])}).` : `<b>Sugerido:</b> ${esc(sug.motivo)}`}</small>`, 'seg-4')}
+        ${grupoFiltro('vivienda', 'Vivienda', botones(VIVIENDAS, 'vivienda', vivienda),
+          `<small class="${vivienda ? '' : 'pendiente'}">${vivienda ? (vivienda === 'ALQUILADA' ? 'Varias campañas exigen casa propia o familiar.' : 'Cumple domicilio estable.') : 'Elígela: algunas campañas no aceptan vivienda alquilada.'}</small>`)}
+        ${grupoFiltro('genero', 'Género', botones(GENEROS, 'genero', genero), ayudaGenero)}
+        ${grupoFiltro('destino', 'Destino del crédito', botones(DESTINOS, 'destino', destino), ayudaDestino)}
       </div>
-      ${resumenMejores(evals)}
-      ${califica.length || revisar.length ? `<div class="prod-grid">${[...califica, ...revisar].map(ev => tarjetaProducto(ev, c.score)).join('')}</div>`
-        : '<div class="vacio">Con los datos del reporte no califica a ninguna campaña vigente.</div>'}
-      ${no.length ? `<details class="prod-no"><summary>No califica (${no.length}) · ver motivos</summary><div class="prod-grid">${no.map(ev => tarjetaProducto(ev, c.score)).join('')}</div></details>` : ''}
+      ${resumenMejores(mejores)}
+      ${califica.length || revisar.length ? `<div class="prod-grid">${[...califica, ...revisar].map(tarjeta).join('')}</div>`
+        : '<div class="vacio">Con los datos del reporte y los filtros elegidos no califica a ninguna campaña vigente.</div>'}
+      ${no.length ? `<details class="prod-no"><summary>No califica (${no.length}) · ver motivos</summary><div class="prod-grid">${no.map(ev => tarjetaProducto(ev, c.score, { destino })).join('')}</div></details>` : ''}
     </section>`;
   }
 
@@ -466,6 +555,8 @@
       if (b.dataset.tipo) reg.tipoCliente = b.dataset.tipo;
       if (b.dataset.vivienda) reg.vivienda = reg.vivienda === b.dataset.vivienda ? null : b.dataset.vivienda;
       if (b.dataset.actividad) reg.actividad = b.dataset.actividad;
+      if (b.dataset.genero) reg.genero = b.dataset.genero;
+      if (b.dataset.destino) reg.destino = reg.destino === b.dataset.destino ? null : b.dataset.destino;
       try { sessionStorage.setItem(CLAVE, JSON.stringify(reg)); } catch (e) { /* sin almacenamiento */ }
       render(reg);
       const sec = panel.querySelector('.productos');

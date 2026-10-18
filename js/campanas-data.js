@@ -5,7 +5,7 @@
  */
 window.FILTPRODUC_CATALOGO = {
   "version": 1,
-  "actualizado": "2026-10-18T01:07:38.927Z",
+  "actualizado": "2026-10-18T03:00:00.000Z",
   "region": "CENTRO",
   "agencia": "Satipo",
   "campanas": [
@@ -68,6 +68,15 @@ window.FILTPRODUC_CATALOGO = {
           "op": "==",
           "valor": false,
           "texto": "Rubro no agropecuario ni pesquero (salvo ingresos comerciales sustentados)",
+          "siFalta": "cumple"
+        },
+        {
+          "campo": "destino",
+          "op": "in",
+          "valor": [
+            "CAPITAL_TRABAJO"
+          ],
+          "texto": "Destino: solo capital de trabajo",
           "siFalta": "cumple"
         }
       ],

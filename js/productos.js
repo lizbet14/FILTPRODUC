@@ -80,7 +80,7 @@
     return t === 'VIGENTE' ? { tipo: 'RECURRENTE', creditoVigente: true } : { tipo: t, creditoVigente: false };
   }
 
-  function hechos(cliente, analisis, tipoElegido, vivienda, actividad) {
+  function hechos(cliente, analisis, tipoElegido, vivienda, actividad, extra = {}) {
     const { tipo: tipoCliente, creditoVigente } = normalizarTipo(tipoElegido);
     const pe = perfilEfectivo(analisis, actividad);
     const cp = cajaPiura(cliente);
@@ -120,7 +120,10 @@
       esPersonaNatural: cliente.ruc ? !String(cliente.ruc).startsWith('20') : true,
       esAgroPesca: ciiu ? /^0[1-3]/.test(ciiu) : null,
       antiguedadMeses: pe.negocioSinRuc ? null : analisis.ruc.antiguedadMeses,
-      genero: cliente.genero ?? null,
+      // Género: lo que elija el asesor manda sobre el reporte
+      genero: extra.genero || cliente.genero || null,
+      // Destino del crédito: CAPITAL_TRABAJO o ACTIVO_FIJO (lo elige el asesor)
+      destino: extra.destino || null,
       ingresoEstimadoMin: cliente.ingresoEstimado ? cliente.ingresoEstimado.min : null,
       deudaMaxima: analisis.deuda.maximo,
       maxEntidades: analisis.deuda.entidadesMax,
@@ -207,7 +210,7 @@
   /**
    * @param {object} cliente
    * @param {object} analisis
-   * @param {object} opciones { tipoCliente, vivienda, actividad, region, hoy }
+   * @param {object} opciones { tipoCliente, vivienda, actividad, genero, destino, region, hoy }
    */
   function evaluar(cliente, analisis, opciones = {}) {
     const tipoElegido = opciones.tipoCliente || sugerirTipoCliente(cliente).tipo;
@@ -215,7 +218,7 @@
     const hoy = opciones.hoy || new Date().toISOString().slice(0, 10);
     const vivienda = opciones.vivienda || null;
     const actividad = opciones.actividad !== undefined ? opciones.actividad : sugerirActividad(analisis).actividad;
-    const h = hechos(cliente, analisis, tipoElegido, vivienda, actividad);
+    const h = hechos(cliente, analisis, tipoElegido, vivienda, actividad, { genero: opciones.genero, destino: opciones.destino });
     const cat = Campanas.catalogo(opciones.region || Campanas.CONFIG.region);
     const orden = { CALIFICA: 0, REVISAR: 1, NO_CALIFICA: 2 };
 
@@ -249,6 +252,21 @@
       || ((a.oferta && a.oferta.teaMin || 99) - (b.oferta && b.oferta.teaMin || 99)));
   }
 
+  const DESTINOS = ['CAPITAL_TRABAJO', 'ACTIVO_FIJO'];
+  /**
+   * Destinos que financia la campaña: los de su requisito "destino" si lo tiene;
+   * si no, las campañas empresariales financian ambos y las de consumo ninguno (libre disponibilidad).
+   */
+  function destinosDe(p) {
+    const r = (p.requisitos || []).find(q => q.campo === 'destino');
+    if (r) {
+      const vals = Array.isArray(r.valor) ? r.valor : [r.valor];
+      if (r.op === 'in' || r.op === '==') return DESTINOS.filter(d => vals.includes(d));
+      if (r.op === 'notIn' || r.op === '!=') return DESTINOS.filter(d => !vals.includes(d));
+    }
+    return /consumo/i.test(p.segmento || '') ? [] : DESTINOS.slice();
+  }
+
   /** Mejor monto y mejor tasa entre las campañas que califican. */
   function resumenOfertas(evals) {
     const ok = evals.filter(e => e.estado === 'CALIFICA' && e.oferta && e.oferta.montoMax !== null);
@@ -258,5 +276,5 @@
     return { mejorMonto, mejorTasa };
   }
 
-  return { evaluar, hechos, sugerirTipoCliente, sugerirActividad, perfilEfectivo, normalUltimos, calcularOferta, resumenOfertas };
+  return { evaluar, hechos, destinosDe, sugerirTipoCliente, sugerirActividad, perfilEfectivo, normalUltimos, calcularOferta, resumenOfertas };
 });
