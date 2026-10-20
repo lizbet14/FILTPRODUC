@@ -150,7 +150,9 @@
     consumo: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M16 15h2"/>',
     monto: '<path d="M12 2v20"/><path d="M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
     tasa: '<path d="m19 5-14 14"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
-    check: '<path d="m5 12 5 5 9-10"/>'
+    check: '<path d="m5 12 5 5 9-10"/>',
+    filtro: '<path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/>',
+    chevron: '<path d="m6 9 6 6 6-6"/>'
   };
   const ico = (k, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k]}</svg>`;
   const ESTADO_ICO = { CALIFICA: '✓ ', REVISAR: '? ', NO_CALIFICA: '✕ ' };
@@ -378,6 +380,25 @@
     </div>`;
   }
 
+  // Menú de filtros plegable: recordado por navegador (por defecto, plegado)
+  const CLAVE_FILTROS = 'filtproduc:filtros-abiertos';
+  let filtrosAbiertos = false;
+  try { filtrosAbiertos = localStorage.getItem(CLAVE_FILTROS) === '1'; } catch (e) { /* sin almacenamiento */ }
+
+  /** Chips con lo elegido en cada filtro (se ven con el menú plegado). */
+  function resumenFiltros(op) {
+    const item = (txt, pendiente) => `<span class="fchip${pendiente ? ' fchip-pend' : ''}">${pendiente ? '! ' : ''}${esc(txt)}</span>`;
+    const chips = [
+      op.actividad ? item(capital(op.actividad)) : item('Perfil por elegir', true),
+      item(TIPO_TXT[op.tipoCliente] || 'Tipo por elegir', !TIPO_TXT[op.tipoCliente]),
+      op.vivienda ? item('Vivienda ' + VIVIENDAS.find(v => v[0] === op.vivienda)[1].toLowerCase()) : item('Vivienda por elegir', true),
+      op.genero ? item(GENERO_TXT[op.genero]) : item('Género por elegir', true)
+    ];
+    if (op.actividad !== 'CONSUMO') chips.push(op.destino ? item(DESTINO_TXT[op.destino]) : item('Destino por elegir', true));
+    const pend = chips.filter(x => x.includes('fchip-pend')).length;
+    return { html: chips.join(''), pend };
+  }
+
   function seccionProductos(c, a, reg) {
     const sug = Productos.sugerirTipoCliente(c);
     const sugAct = Productos.sugerirActividad(a);
@@ -402,6 +423,7 @@
         ? `<small>${esc(DESTINO_TXT[destino])}: ${destino === 'ACTIVO_FIJO' && conDestino.length ? `${esc(listaNombres(conDestino))} no lo financia.` : 'lo financian las campañas empresariales marcadas.'}</small>`
         : `<small class="pendiente">Elígelo${conDestino.length ? `: ${esc(listaNombres(conDestino))} solo financia capital de trabajo` : ''}.</small>`;
 
+    const resFil = resumenFiltros(op);
     let i = 0;
     const tarjeta = ev => tarjetaProducto(ev, c.score, {
       i: i++, animar, destino,
@@ -423,6 +445,14 @@
         </div>
         ${anilloCalifica(califica.length, evals.length)}
       </header>
+      <div class="filtros-caja${filtrosAbiertos ? ' abierto' : ''}">
+        <button type="button" class="filtros-toggle" aria-expanded="${filtrosAbiertos}" aria-controls="filtrosCuerpo">
+          <span class="ft-ico">${ico('filtro')}</span>
+          <span class="ft-txt"><b>Filtros del cliente</b>${resFil.pend ? `<small class="ft-pend">${resFil.pend} por elegir</small>` : ''}</span>
+          <span class="filtros-resumen">${resFil.html}</span>
+          <span class="ft-accion"><span class="ft-ver">${filtrosAbiertos ? 'Ocultar' : 'Cambiar'}</span>${ico('chevron', 'ft-chev')}</span>
+        </button>
+        <div class="filtros-cuerpo" id="filtrosCuerpo"${filtrosAbiertos ? '' : ' inert'}><div class="filtros-in">
       <div class="filtros-cliente">
         ${grupoFiltro('perfil', 'Perfil del cliente', botones(ACTIVIDADES, 'actividad', actividad),
           `<small class="${actividad ? '' : 'pendiente'}">${actividad ? esc(ACTIVIDAD_AYUDA[actividad]) + ' ' : ''}${reg.actividad !== undefined && reg.actividad !== sugAct.actividad ? `<b>Elegido por ti</b>${sugAct.actividad ? ` (según RUC: ${esc(capital(sugAct.actividad))})` : ''}.` : `<b>${actividad ? 'Sugerido:' : 'Elígelo:'}</b> ${esc(sugAct.motivo)}`}</small>`)}
@@ -432,6 +462,8 @@
           `<small class="${vivienda ? '' : 'pendiente'}">${vivienda ? (vivienda === 'ALQUILADA' ? 'Varias campañas exigen casa propia o familiar.' : 'Cumple domicilio estable.') : 'Elígela: algunas campañas no aceptan vivienda alquilada.'}</small>`)}
         ${grupoFiltro('genero', 'Género', botones(GENEROS, 'genero', genero), ayudaGenero)}
         ${grupoFiltro('destino', 'Destino del crédito', botones(DESTINOS, 'destino', destino), ayudaDestino)}
+      </div>
+        </div></div>
       </div>
       ${resumenMejores(mejores)}
       ${califica.length || revisar.length ? `<div class="prod-grid">${[...califica, ...revisar].map(tarjeta).join('')}</div>`
@@ -551,6 +583,15 @@
         ${faltan.length ? `<p style="font-size:13px;margin:10px 0 0">Datos que el lector no encontró:</p><div class="faltantes">${faltan.map(k => `<span>${NOMBRES_CAMPOS[k]}</span>`).join('')}</div>` : ''}
         <pre class="texto-pdf">${esc(reg.texto || '')}</pre>
       </details>`;
+    const caja = panel.querySelector('.filtros-caja');
+    if (caja) caja.querySelector('.filtros-toggle').addEventListener('click', () => {
+      filtrosAbiertos = !caja.classList.contains('abierto');
+      caja.classList.toggle('abierto', filtrosAbiertos);
+      caja.querySelector('.filtros-toggle').setAttribute('aria-expanded', filtrosAbiertos);
+      caja.querySelector('.ft-ver').textContent = filtrosAbiertos ? 'Ocultar' : 'Cambiar';
+      caja.querySelector('.filtros-cuerpo').inert = !filtrosAbiertos;
+      try { localStorage.setItem(CLAVE_FILTROS, filtrosAbiertos ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
+    });
     panel.querySelectorAll('.segmentado button').forEach(b => b.addEventListener('click', () => {
       if (b.dataset.tipo) reg.tipoCliente = b.dataset.tipo;
       if (b.dataset.vivienda) reg.vivienda = reg.vivienda === b.dataset.vivienda ? null : b.dataset.vivienda;
