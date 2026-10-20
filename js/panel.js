@@ -221,7 +221,7 @@
     const refs = ev.oferta ? ev.oferta.referencias : [];
     const consumo = /consumo/i.test(p.segmento || '');
     const cintas = [extra.mayorMonto ? `<span class="cinta cinta-monto">★ Mayor monto</span>` : '', extra.menorTea ? `<span class="cinta cinta-tea">↓ Menor TEA</span>` : ''].join('');
-    return `<article class="prod prod-${ev.estado} ${consumo ? 'seg-consumo' : 'seg-empresarial'}${extra.animar ? ' anim' : ''}" style="--i:${extra.i || 0}">
+    return `<article id="prod-${esc(p.id)}" class="prod prod-${ev.estado} ${consumo ? 'seg-consumo' : 'seg-empresarial'}${extra.animar ? ' anim' : ''}" style="--i:${extra.i || 0}">
       <div class="prod-banda">
         <span class="prod-ico">${ico(consumo ? 'consumo' : 'empresarial')}</span>
         <div class="prod-tit"><span class="seg">${esc(p.segmento)} · ${esc(p.tipo)}</span><h3>${esc(p.nombre)}</h3></div>
@@ -246,14 +246,30 @@
     </article>`;
   }
 
+  /** Barra horizontal con lo mejor disponible: mayor monto y menor TEA (clic → va a la tarjeta). */
   function resumenMejores(r) {
     if (!r) return '';
     const mm = r.mejorMonto, mt = r.mejorTasa;
-    return `<div class="mejores">
-      <div class="mejor mejor-monto"><span class="mejor-ico">${ico('monto')}</span><div><small>Mayor monto disponible</small><b class="num">${sMonto(mm.oferta.montoMax)}</b><span>${esc(mm.producto.nombre)} · TEA desde ${pctTxt(mm.oferta.teaMin)}</span></div></div>
-      <div class="mejor mejor-tea"><span class="mejor-ico">${ico('tasa')}</span><div><small>Menor TEA disponible</small><b class="num">${pctTxt(mt.oferta.teaMin)}</b><span>${esc(mt.producto.nombre)} · hasta ${sMonto(mt.oferta.montoMax)}</span></div></div>
-      <p class="mejores-nota">Montos máximos según campaña y score. El monto final depende de la capacidad de pago evaluada.</p>
-    </div>`;
+    const item = (ev, icono, etq, valor, detalle) => `
+      <button type="button" class="mj-item" data-ir="prod-${esc(ev.producto.id)}" title="Ver la tarjeta de ${esc(ev.producto.nombre)}">
+        <span class="mj-ico">${ico(icono)}</span>
+        <span class="mj-txt"><small>${etq}</small><b class="num">${valor}</b><span>${detalle}</span></span>
+        <span class="mj-ir" aria-hidden="true">→</span>
+      </button>`;
+    const cuerpo = mm === mt
+      ? `<button type="button" class="mj-item mj-doble" data-ir="prod-${esc(mm.producto.id)}" title="Ver la tarjeta de ${esc(mm.producto.nombre)}">
+          <span class="mj-ico">${ico('monto')}</span>
+          <span class="mj-txt"><small>Mayor monto y menor TEA</small><b class="num">${sMonto(mm.oferta.montoMax)} <i>·</i> TEA ${pctTxt(mm.oferta.teaMin)}</b><span>${esc(mm.producto.nombre)} es la mejor opción en monto y en tasa</span></span>
+          <span class="mj-ir" aria-hidden="true">→</span>
+        </button>`
+      : item(mm, 'monto', 'Mayor monto', sMonto(mm.oferta.montoMax), `${esc(mm.producto.nombre)} · TEA ${pctTxt(mm.oferta.teaMin)}`)
+        + '<span class="mj-sep" aria-hidden="true"></span>'
+        + item(mt, 'tasa', 'Menor TEA', pctTxt(mt.oferta.teaMin), `${esc(mt.producto.nombre)} · hasta ${sMonto(mt.oferta.montoMax)}`);
+    return `<div class="mejores" role="group" aria-label="Lo mejor disponible para el cliente">
+        <div class="mj-etq"><span class="mj-estrella">★</span><b>Lo mejor <br>para el cliente</b></div>
+        ${cuerpo}
+      </div>
+      <p class="mejores-nota">Montos máximos según campaña y score. El monto final depende de la capacidad de pago evaluada.</p>`;
   }
 
   /** Anillo con la proporción de campañas a las que califica. */
@@ -592,6 +608,12 @@
       caja.querySelector('.filtros-cuerpo').inert = !filtrosAbiertos;
       try { localStorage.setItem(CLAVE_FILTROS, filtrosAbiertos ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
     });
+    panel.querySelectorAll('.mj-item').forEach(b => b.addEventListener('click', () => {
+      const t = document.getElementById(b.dataset.ir);
+      if (!t) return;
+      t.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      t.classList.remove('resaltar'); void t.offsetWidth; t.classList.add('resaltar');
+    }));
     panel.querySelectorAll('.segmentado button').forEach(b => b.addEventListener('click', () => {
       if (b.dataset.tipo) reg.tipoCliente = b.dataset.tipo;
       if (b.dataset.vivienda) reg.vivienda = reg.vivienda === b.dataset.vivienda ? null : b.dataset.vivienda;

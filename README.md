@@ -30,7 +30,7 @@ Calibrado con el **"Reporte de Crédito" de Sentinel / Experian** (PDF descargad
    - **Historial de endeudamiento**: gráfico mensual con semáforo, tendencia, variación, máximo y promedio.
    - **Detalle por entidad** y **alertas** para el asesor (CPP o peor, deuda vencida, castigos, judicial, sobreendeudamiento, RUC no activo…).
    - **Corregir datos** manualmente si el lector no encontró algo; el análisis se recalcula.
-   - **Productos y campañas**: a cuáles califica, con **monto máximo y TEA mínima** según su score y los topes de su situación (paralelo, vivienda alquilada, sin score), cuadro de tramos y cuánto subiría con mejor score. Diseño con encabezado de resumen (anillo de campañas que califica), tarjetas por segmento (Empresarial azul, Consumo ámbar), cintas de *Mayor monto* y *Menor TEA*, barra de tramos y destinos que financia cada campaña.
+   - **Productos y campañas**: a cuáles califica, con **monto máximo y TEA mínima** según su score y los topes de su situación (paralelo, vivienda alquilada, sin score), cuadro de tramos y cuánto subiría con mejor score. Diseño con encabezado de resumen (anillo de campañas que califica), tarjetas por segmento (Empresarial azul, Consumo ámbar), barra horizontal "Lo mejor para el cliente" (mayor monto y menor TEA; clic para ir a la tarjeta), cintas de *Mayor monto* y *Menor TEA*, barra de tramos y destinos que financia cada campaña.
 
 ## Panel de administración (`admin.html`)
 
