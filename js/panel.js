@@ -442,6 +442,8 @@
         : `<small class="pendiente">Elígelo${conDestino.length ? `: ${esc(listaNombres(conDestino))} solo financia capital de trabajo` : ''}.</small>`;
 
     const resFil = resumenFiltros(op);
+    const perfilTxt = actividad === 'EMPRESARIAL' ? 'empresariales vigentes' : actividad === 'CONSUMO' ? 'de consumo vigentes' : 'vigentes';
+    const ocultas = evals.ocultasPorPerfil || 0;
     let i = 0;
     const tarjeta = ev => tarjetaProducto(ev, c.score, {
       i: i++, animar, destino,
@@ -454,7 +456,7 @@
         <div class="hero-txt">
           <span class="hero-etq">Región ${esc(Campanas.CONFIG.region)} · Agencia ${esc(Campanas.CONFIG.agencia)}</span>
           <h2>Productos y campañas a los que accede</h2>
-          <p class="resumen-prod">${califica.length ? `¡Califica a <b class="num">${califica.length}</b> de ${evals.length} campañas vigentes!` : `No califica a ninguna de las ${evals.length} campañas vigentes con estos filtros.`}</p>
+          <p class="resumen-prod">${califica.length ? `¡Califica a <b class="num">${califica.length}</b> de ${evals.length} campañas ${perfilTxt}!` : `No califica a ninguna de las ${evals.length} campañas ${perfilTxt} con estos filtros.`}</p>
           <div class="hero-stats">
             <span class="hs hs-ok"><b class="num">${califica.length}</b> califican</span>
             ${revisar.length ? `<span class="hs hs-rev"><b class="num">${revisar.length}</b> por revisar</span>` : ''}
@@ -483,6 +485,7 @@
       </div>
         </div></div>
       </div>
+      ${ocultas ? `<p class="nota-perfil">Perfil <b>${esc(capital(actividad))}</b>: no se muestran ${ocultas} campaña${ocultas === 1 ? '' : 's'} de ${actividad === 'EMPRESARIAL' ? 'consumo' : 'crédito empresarial'}. Cambia el perfil en los filtros para verlas.</p>` : ''}
       ${resumenMejores(mejores)}
       ${califica.length || revisar.length ? `<div class="prod-grid">${[...califica, ...revisar].map(tarjeta).join('')}</div>`
         : '<div class="vacio">Con los datos del reporte y los filtros elegidos no califica a ninguna campaña vigente.</div>'}

@@ -222,7 +222,12 @@
     const cat = Campanas.catalogo(opciones.region || Campanas.CONFIG.region);
     const orden = { CALIFICA: 0, REVISAR: 1, NO_CALIFICA: 2 };
 
-    return cat.filter(p => vigente(p, hoy)).map(p => {
+    // El perfil elegido separa los segmentos: Empresarial no muestra campañas de consumo y viceversa
+    const esConsumo = p => /consumo/i.test(p.segmento || '');
+    const vigentes = cat.filter(p => vigente(p, hoy));
+    const visibles = vigentes.filter(p => actividad === 'EMPRESARIAL' ? !esConsumo(p) : actividad === 'CONSUMO' ? esConsumo(p) : true);
+
+    const res = visibles.map(p => {
       const detalle = [];
       for (const r of p.requisitos || []) {
         if (r.soloPara && !r.soloPara.includes(tipoCliente)) continue;
@@ -250,6 +255,8 @@
     }).sort((a, b) => (orden[a.estado] - orden[b.estado])
       || ((b.oferta && b.oferta.montoMax || 0) - (a.oferta && a.oferta.montoMax || 0))
       || ((a.oferta && a.oferta.teaMin || 99) - (b.oferta && b.oferta.teaMin || 99)));
+    res.ocultasPorPerfil = vigentes.length - visibles.length;
+    return res;
   }
 
   const DESTINOS = ['CAPITAL_TRABAJO', 'ACTIVO_FIJO'];
