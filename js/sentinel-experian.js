@@ -87,26 +87,53 @@
   }
 
   // ---------- secciones ----------
-  function cabecera(lineasN) {
-    const r = { dni: null, nombre: null, score: null, scoreTexto: null };
-    // "DNI 12345678 - APELLIDOS NOMBRES" (la del cliente, no la del usuario que consulta)
-    for (let i = 0; i < lineasN.length; i++) {
-      const l = lineasN[i];
-      const m = /^(DNI|CE|PAS|RUC)\s+(\d{8,11})\s+-\s+(.+)$/.exec(l.trim());
-      if (m && !/^USUARIO/.test(l)) { r.dni = m[1] === 'DNI' ? m[2] : null; r.nombre = original(i, m[3].trim()); r.tipoDocumento = m[1]; r.numeroDocumento = m[2]; break; }
-    }
-    if (!r.dni) { const m = /^DNI\s+(\d{8})\b/.exec(lineasN[0] || ''); if (m) r.dni = m[1]; }
-
-    const iScore = indice(lineasN, /^SCORE$/);
+  /**
+   * Score Experian. En el PDF el número va al costado del termómetro, a la ALTURA del nivel:
+   *  - score alto: el número queda arriba, en su propia línea ("805");
+   *  - score bajo: el número baja y queda en la misma línea que otra fila de la cabecera
+   *    (p. ej. "20/10/2026  DNI  44520150  0.000  2,738.31  469"), siempre como último dato a la derecha.
+   * Se busca entre "SCORE" y el texto del puntaje ("PUNTAJE MUY BAJO"…). Si el número venía pegado
+   * a otra fila, se quita de esa fila para no confundirlo con otros datos.
+   */
+  function leerScore(lineasN) {
+    const r = { score: null, scoreTexto: null, sinScore: false };
+    const iScore = indice(lineasN, /^SCORE(\s+EXPERIAN)?$|^SCORE\s{2,}|\s{2,}SCORE$/);
     const iPuntaje = indice(lineasN, /PUNTAJE/, Math.max(0, iScore));
+    const fin = iPuntaje > iScore ? iPuntaje + 1 : Math.min(lineasN.length, iScore + 14);
+    const valido = n => n >= 1 && n <= 999;
     if (iScore >= 0) {
-      const fin = iPuntaje > iScore ? iPuntaje : Math.min(lineasN.length, iScore + 12);
+      // 1) número solo en su línea (scores altos)
       for (let i = iScore + 1; i < fin; i++) {
-        const m = /^\s*(\d{1,4})\s*$/.exec(lineasN[i]);
-        if (m) { r.score = parseInt(m[1], 10); break; }
+        const m = /^\s*(\d{1,3})\s*$/.exec(lineasN[i]);
+        if (m && valido(+m[1])) { r.score = +m[1]; break; }
+      }
+      // 2) número al final de otra fila, separado como columna (scores bajos)
+      if (r.score === null) {
+        for (let i = iScore; i < fin; i++) {
+          const m = /^(.*\S)\s{2,}(\d{1,3})\s*$/.exec(lineasN[i]);
+          if (!m || !valido(+m[2])) continue;
+          r.score = +m[2];
+          lineasN[i] = m[1];
+          if (ORIG[i]) ORIG[i] = ORIG[i].replace(/\s{2,}\d{1,3}\s*$/, '');
+          break;
+        }
+      }
+      // 3) número al inicio de una línea con otro texto ("469  PUNTAJE MUY BAJO", "805  EXPERIAN")
+      if (r.score === null) {
+        for (let i = iScore; i < fin; i++) {
+          const m = /^\s*(\d{1,3})\s{2,}\D/.exec(lineasN[i]);
+          if (!m || !valido(+m[1])) continue;
+          r.score = +m[1];
+          lineasN[i] = lineasN[i].replace(/^\s*\d{1,3}\s{2,}/, '');
+          if (ORIG[i]) ORIG[i] = ORIG[i].replace(/^\s*\d{1,3}\s{2,}/, '');
+          break;
+        }
       }
     }
-    if (iPuntaje >= 0 && iPuntaje - iScore < 15) r.scoreTexto = lineasN[iPuntaje].trim().replace(/^(.)(.*)$/, (_, a, b) => a + b.toLowerCase());
+    if (iPuntaje >= 0 && iPuntaje - iScore < 16) {
+      const t = (lineasN[iPuntaje].split(/\s{2,}/).find(x => /PUNTAJE/.test(x)) || lineasN[iPuntaje]).trim();
+      r.scoreTexto = t.replace(/^(.)(.*)$/, (_, a, b) => a + b.toLowerCase());
+    }
     // "Este número de documento se encuentra excluido del cálculo de score (código de exclusión: NN)":
     // el cliente no tiene score (no confundir el código de exclusión con un score)
     const zona = lineasN.slice(Math.max(0, iScore), iScore >= 0 ? iScore + 25 : 40).join(' ');
@@ -115,6 +142,19 @@
       r.sinScore = true;
       r.scoreTexto = 'El cliente no cuenta con score';
     }
+    return r;
+  }
+
+  function cabecera(lineasN) {
+    // Primero el score: puede venir pegado a la línea del nombre o de la Consulta Rápida
+    const r = Object.assign({ dni: null, nombre: null }, leerScore(lineasN));
+    // "DNI 12345678 - APELLIDOS NOMBRES" (la del cliente, no la del usuario que consulta)
+    for (let i = 0; i < lineasN.length; i++) {
+      const l = lineasN[i];
+      const m = /^(DNI|CE|PAS|RUC)\s+(\d{8,11})\s+-\s+(.+)$/.exec(l.trim());
+      if (m && !/^USUARIO/.test(l)) { r.dni = m[1] === 'DNI' ? m[2] : null; r.nombre = original(i, m[3].split(/\s{2,}/)[0].trim()); r.tipoDocumento = m[1]; r.numeroDocumento = m[2]; break; }
+    }
+    if (!r.dni) { const m = /^DNI\s+(\d{8})\b/.exec(lineasN[0] || ''); if (m) r.dni = m[1]; }
     return r;
   }
 
@@ -358,8 +398,8 @@
   function analizar(lineas) {
     ORIG = lineas.map(l => String(l || ''));
     const lineasN = lineas.map(norm);
+    const cab = cabecera(lineasN); // primero: limpia el score si vino pegado a otra fila
     const textoN = lineasN.join('\n');
-    const cab = cabecera(lineasN);
     const cr = consultaRapida(lineasN);
     const su = sunat(lineasN);
     const det = detalleDeuda(lineasN);
