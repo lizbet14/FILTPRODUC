@@ -76,6 +76,30 @@
   ['dragleave', 'drop'].forEach(ev => zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.remove('arrastrando'); }));
   zona.addEventListener('drop', e => desdeArchivo(e.dataTransfer.files[0]));
 
+  // PDF compartido desde Android ("Compartir → FILTPRODUC"): lo deja el service worker en el caché local
+  async function desdeCompartido() {
+    const p = new URLSearchParams(location.search).get('compartido');
+    if (p === null) return;
+    history.replaceState(null, '', location.pathname);
+    if (p !== '1' || !('caches' in window)) {
+      mostrarError('No se recibió el PDF. Vuelve a compartir el <b>Reporte 1</b> descargado de Sentinel, o elígelo con el botón de abajo.');
+      return;
+    }
+    try {
+      const cache = await caches.open('filtproduc-compartido');
+      const req = new Request('reporte-compartido');
+      const r = await cache.match(req);
+      if (!r) throw new Error('sin archivo');
+      const nombre = decodeURIComponent(r.headers.get('X-Nombre') || 'reporte.pdf');
+      const bytes = new Uint8Array(await r.arrayBuffer());
+      await cache.delete(req);
+      procesar(bytes, nombre);
+    } catch (e) {
+      mostrarError('No se pudo abrir el PDF compartido. Elígelo con el botón de abajo.');
+    }
+  }
+  desdeCompartido();
+
   document.getElementById('btnEjemplo').addEventListener('click', async () => {
     try {
       const r = await fetch('ejemplos/reporte-sentinel-ficticio.pdf');

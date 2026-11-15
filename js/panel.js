@@ -331,20 +331,22 @@
 
   function tarjetaScore(c) {
     const n = ScoreVisual.nivelDe(c.score);
-    return `<div class="kpi destacado kpi-score nivel-${n ? n.id : 'NA'}" title="Toca para repetir la animación" role="button" tabindex="0">
+    return `<div class="kpi destacado kpi-score nivel-${n ? n.id : 'NA'}${c.sinScore && (c.score === null || c.score === undefined) ? ' sin-score' : ''}" title="Toca para repetir la animación" role="button" tabindex="0">
       <div class="etq">Score Experian</div>
       ${ScoreVisual.medidorSVG(c.score)}
       <div class="score-centro">
-        <span class="valor num" ${c.score !== null && c.score !== undefined ? `data-cuenta="${c.score}"` : ''}>${v(c.score)}</span>
+        ${c.sinScore && (c.score === null || c.score === undefined)
+          ? '<span class="valor valor-sin">Sin score</span>'
+          : `<span class="valor num" ${c.score !== null && c.score !== undefined ? `data-cuenta="${c.score}"` : ''}>${v(c.score)}</span>`}
         ${n ? `<span class="insignia-nivel">${n.id === 'EXCELENTE' ? '★ ' : ''}${esc(n.nombre)}${n.medalla !== '—' ? ` · ${esc(n.medalla)}` : ''}</span>` : ''}
       </div>
-      <div class="sub">${esc(c.scoreTexto || 'Sentinel')}</div>
+      <div class="sub">${esc(c.sinScore && (c.score === null || c.score === undefined) ? 'El cliente no cuenta con score' : (c.scoreTexto || 'Sentinel'))}</div>
     </div>`;
   }
 
   function tarjetaSiguienteNivel(c, a, reg) {
     if (c.score === null || c.score === undefined) {
-      return `<div class="kpi kpi-nivel"><div class="etq">Siguiente nivel</div><div class="sub">El reporte no trae score. Corrígelo con "Corregir datos" si lo tienes.</div></div>`;
+      return `<div class="kpi kpi-nivel"><div class="etq">Siguiente nivel</div><div class="sub">${c.sinScore ? 'El cliente no cuenta con score.' : 'El reporte no trae score. Corrígelo con "Corregir datos" si lo tienes.'}</div></div>`;
     }
     const n = ScoreVisual.nivelDe(c.score);
     const sig = ScoreVisual.siguienteNivel(c.score);
@@ -689,6 +691,7 @@
         if (reg.cliente[el.name] !== nuevo) {
           reg.cliente[el.name] = nuevo;
           if (el.name === 'numEntidades') reg.cliente.numEntidadesEstimado = false;
+          if (el.name === 'score') reg.cliente.sinScore = nuevo === null && !!reg.cliente.sinScore;
           if (el.name === 'calificacion') reg.cliente.semaforo = ({ NORMAL: 'VERDE', CPP: 'AMARILLO', DEFICIENTE: 'NARANJA', DUDOSO: 'ROJO', PERDIDA: 'NEGRO' })[nuevo] || null;
           reg.editado = true;
         }

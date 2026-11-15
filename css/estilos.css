@@ -269,6 +269,17 @@ pre.texto-pdf { white-space: pre-wrap; font-size: 12px; background: var(--fondo)
 .faltantes span { font-size: 12px; background: var(--ambar-suave); color: var(--ambar); border-radius: 6px; padding: 2px 8px; font-weight: 700; }
 .estimado { font-size: 11px; color: var(--ambar); font-weight: 700; }
 
+.kpi-score.sin-score .aguja { display: none; }
+.valor-sin { font-size: 26px; font-weight: 800; color: var(--tinta-3); letter-spacing: -.3px; }
+
+/* ---------- app instalable ---------- */
+.acciones .btn-instalar, .btn-instalar { background: linear-gradient(135deg, #ffd25a, #f8a900); color: #2b1f00; border-color: #f8a900; font-weight: 800; }
+.celular { margin-top: 22px; background: var(--papel); border: 1px solid var(--linea); border-left: 4px solid var(--acento); border-radius: 14px; padding: 16px 18px; text-align: left; }
+.celular h3 { margin: 0 0 8px; font-size: 15px; }
+.celular ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; color: var(--tinta-2); }
+.celular p { margin: 10px 0 0; font-size: 12.5px; color: var(--tinta-3); }
+.modo-app .celular li:first-child { display: none; }
+
 /* ---------- productos y campañas ---------- */
 .productos { margin-bottom: 16px; overflow: hidden; }
 /* Encabezado vistoso */
@@ -499,6 +510,7 @@ dialog::backdrop { background: rgba(20, 24, 30, .45); }
   .campos { grid-template-columns: 1fr; }
   .fuente { text-align: left; }
   .acciones .btn span { display: none; }
+  .acciones .btn-instalar span { display: inline; }
   .kpi .valor { font-size: 22px; white-space: normal; }
   .prod-grid { grid-template-columns: 1fr; }
   .mejores { flex-direction: column; }

@@ -142,7 +142,8 @@
   function alertas(c, ruc, deuda) {
     const a = [];
     const add = (nivel, texto) => a.push({ nivel, texto });
-    if (c.score === null || c.score === undefined) add('info', 'No se encontró el score en el reporte. Revísalo y corrígelo manualmente.');
+    if (c.sinScore) add('info', 'El cliente no cuenta con score.');
+    else if (c.score === null || c.score === undefined) add('info', 'No se encontró el score en el reporte. Revísalo y corrígelo manualmente.');
     const SEM_ALERTA = { AMARILLO: ['medio', 'CPP (con problemas potenciales)'], NARANJA: ['alto', 'Deficiente'], ROJO: ['alto', 'Dudoso'], NEGRO: ['alto', 'Pérdida'] };
     if (SEM_ALERTA[c.semaforo]) add(SEM_ALERTA[c.semaforo][0], `Semáforo actual en ${c.semaforo}: calificación ${SEM_ALERTA[c.semaforo][1]}.`);
     if (c.semaforoSentinel === 'ROJO') add('alto', 'Semáforo de riesgo Sentinel en rojo: deudas con atraso significativo.');

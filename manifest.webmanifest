@@ -1,0 +1,31 @@
+{
+  "name": "FILTPRODUC · Calificador de clientes",
+  "short_name": "FILTPRODUC",
+  "description": "Lee el reporte Sentinel y muestra a qué productos y campañas de Caja Piura califica el cliente.",
+  "lang": "es-PE",
+  "id": "./",
+  "start_url": "./index.html?origen=app",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f7fc",
+  "theme_color": "#0b3d91",
+  "icons": [
+    { "src": "iconos/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "iconos/icono-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "share_target": {
+    "action": "./compartir",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "titulo",
+      "text": "texto",
+      "files": [
+        { "name": "reporte", "accept": ["application/pdf", ".pdf"] }
+      ]
+    }
+  }
+}

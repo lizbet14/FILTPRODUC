@@ -5,11 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FILTPRODUC · Cargar reporte</title>
   <meta name="description" content="Calificador de clientes: lee el reporte Sentinel y muestra a qué productos y campañas accede el cliente.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b3d91">
+  <link rel="icon" type="image/png" sizes="192x192" href="iconos/icono-192.png">
+  <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/estilos.css?v=20261019b">
-  <script src="js/tema.js?v=20261019b"></script>
+  <link rel="stylesheet" href="css/estilos.css?v=20261115a">
+  <script src="js/tema.js?v=20261115a"></script>
 </head>
 <body>
   <header class="barra">
@@ -18,6 +22,7 @@
       <span><b>FILTPRODUC</b><small>Calificador de clientes · Asesores de negocios</small></span>
     </a>
     <div class="acciones">
+      <button class="btn btn-instalar" type="button" data-instalar hidden title="Instalar FILTPRODUC como app">📲 <span>Instalar app</span></button>
       <button class="btn btn-tema" id="btnTema" type="button" title="Cambiar tema" aria-label="Cambiar tema">
         <svg class="ico-luna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="ico-sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
@@ -52,6 +57,16 @@
 
     <p class="ejemplo">¿Solo quieres ver cómo funciona? <button type="button" id="btnEjemplo">Usar un reporte ficticio de prueba</button></p>
 
+    <section class="celular">
+      <h3>📱 Úsalo desde tu celular Android</h3>
+      <ol>
+        <li><b>Instala la app</b> una sola vez: en Chrome toca <b>Instalar app</b> (arriba) o el menú <b>⋮ → Instalar app</b> / <b>Agregar a pantalla principal</b>.</li>
+        <li>Consulta al cliente en Sentinel como siempre y descarga el <b>Reporte 1</b> en PDF.</li>
+        <li>Abre el PDF descargado, toca <b>Compartir</b> y elige <b>FILTPRODUC</b>. El panel del cliente se abre solo.</li>
+      </ol>
+      <p>Tu usuario y clave de Sentinel no pasan por esta app, y el PDF se lee solo en tu celular.</p>
+    </section>
+
     <section class="que-lee">
       <h3>Qué extrae del reporte</h3>
       <div class="chips">
@@ -72,9 +87,10 @@
     window.pdfjsLib = pdfjsLib;
     window.dispatchEvent(new Event('pdfjs-listo'));
   </script>
-  <script src="js/pdf-texto.js?v=20261019b"></script>
-  <script src="js/sentinel-experian.js?v=20261019b"></script>
-  <script src="js/sentinel-parser.js?v=20261019b"></script>
-  <script src="js/carga.js?v=20261019b"></script>
+  <script src="js/pdf-texto.js?v=20261115a"></script>
+  <script src="js/sentinel-experian.js?v=20261115a"></script>
+  <script src="js/sentinel-parser.js?v=20261115a"></script>
+  <script src="js/app.js?v=20261115a"></script>
+  <script src="js/carga.js?v=20261115a"></script>
 </body>
 </html>

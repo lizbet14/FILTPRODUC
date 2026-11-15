@@ -8,7 +8,7 @@ Calificador de clientes para asesores de negocios de **Caja Piura**: se carga el
 
 Calibrado con el **"Reporte de Crédito" de Sentinel / Experian** (PDF descargado del sistema). Lee:
 
-- Score Experian y su texto ("Buen Puntaje"), semáforo (valor numérico → color con la regla del reporte)
+- Score Experian y su texto ("Buen Puntaje"); si el documento está **excluido del cálculo de score** se muestra "El cliente no cuenta con score" (el código de exclusión no se confunde con un score); semáforo (valor numérico → color con la regla del reporte)
 - Consulta Rápida: deuda total del DNI y del RUC
 - Indicadores ("Línea de Crédito", "Está Avalado") e ingreso estimado
 - Detalle de la deuda SBS/Microfinanzas por entidad (calificación, monto, días de atraso, entidades que ya no reportan)
@@ -31,6 +31,15 @@ Calibrado con el **"Reporte de Crédito" de Sentinel / Experian** (PDF descargad
    - **Detalle por entidad** y **alertas** para el asesor (CPP o peor, deuda vencida, castigos, judicial, sobreendeudamiento, RUC no activo…).
    - **Corregir datos** manualmente si el lector no encontró algo; el análisis se recalcula.
    - **Productos y campañas**: a cuáles califica, con **monto máximo y TEA mínima** según su score y los topes de su situación (paralelo, vivienda alquilada, sin score), cuadro de tramos y cuánto subiría con mejor score. Diseño con encabezado de resumen (anillo de campañas que califica), tarjetas por segmento (Empresarial azul, Consumo ámbar), barra horizontal "Lo mejor para el cliente" (mayor monto y menor TEA; clic para ir a la tarjeta), cintas de *Mayor monto* y *Menor TEA*, barra de tramos y destinos que financia cada campaña.
+
+## App para Android (instalable)
+
+La web se instala como app (PWA) desde Chrome: botón **📲 Instalar app** o menú **⋮ → Instalar app**.
+
+1. El asesor consulta al cliente en Sentinel como siempre, con su propio usuario, y descarga el **Reporte 1** en PDF.
+2. Abre el PDF, toca **Compartir → FILTPRODUC** y el panel del cliente se abre solo.
+
+El PDF llega por el *share target* del manifiesto (`manifest.webmanifest`); el service worker (`sw.js`) lo guarda un instante en el caché **del propio celular**, la página de carga lo lee y lo borra. Las credenciales de Sentinel nunca pasan por la app y el PDF no se envía a ningún servidor. En iPhone no existe "Compartir a una app web": ahí se usa "Elegir archivo".
 
 ## Panel de administración (`admin.html`)
 
@@ -60,6 +69,7 @@ Acceso con usuario **LBARZOLA** y su clave (en el repositorio solo está el *has
 | `js/admin-config.js` | Usuario y hash de la clave de administración |
 | `js/score-visual.js` | Niveles de score, medidor, animaciones y confeti |
 | `js/productos.js` | Motor de calificación (tipo de cliente, ventanas de calificación, tramos por score) |
+| `manifest.webmanifest`, `sw.js`, `js/app.js`, `iconos/` | App instalable y "Compartir → FILTPRODUC" en Android |
 | `vendor/pdfjs/` | pdf.js (Mozilla, Apache-2.0) incluido para no depender de CDNs |
 | `ejemplos/` | Reporte **ficticio** de prueba (datos inventados) |
 

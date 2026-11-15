@@ -107,6 +107,14 @@
       }
     }
     if (iPuntaje >= 0 && iPuntaje - iScore < 15) r.scoreTexto = lineasN[iPuntaje].trim().replace(/^(.)(.*)$/, (_, a, b) => a + b.toLowerCase());
+    // "Este número de documento se encuentra excluido del cálculo de score (código de exclusión: NN)":
+    // el cliente no tiene score (no confundir el código de exclusión con un score)
+    const zona = lineasN.slice(Math.max(0, iScore), iScore >= 0 ? iScore + 25 : 40).join(' ');
+    if (/EXCLUIDO DEL CALCULO|CODIGO DE EXCLUSION|NO CUENTA CON SCORE|NO TIENE SCORE/.test(zona)) {
+      r.score = null;
+      r.sinScore = true;
+      r.scoreTexto = 'El cliente no cuenta con score';
+    }
     return r;
   }
 
@@ -388,6 +396,7 @@
       fechaCreacion: fCreacion ? iso(fCreacion[1], fCreacion[2], fCreacion[3]) : null,
       score: cab.score,
       scoreTexto: cab.scoreTexto,
+      sinScore: !!cab.sinScore,
       semaforoValor: semValor,
       semaforoSentinel: colorSemaforo(semValor, sinDeuda),
       semaforo: null, // se completa abajo con la calificación SBS
@@ -429,7 +438,7 @@
       historial: historialMensual(filas),
       menciones: { castigo: false, judicial: /COBRANZA JUDICIAL\s+[\d]/.test(textoN), protestos: (pd.protestosSinRegularizar || 0) > 0, morosidad: false },
       camposHallados: {
-        nombre: !!cab.nombre, fechaReporte: !!fechaActualizada(textoN), score: cab.score !== null, semaforo: semValor !== null,
+        nombre: !!cab.nombre, fechaReporte: !!fechaActualizada(textoN), score: cab.score !== null || !!cab.sinScore, semaforo: semValor !== null,
         numEntidades: !!ultima, deudaTotal: !!dniRow, deudaVencida: !!ultima, calificacion: !!ultima,
         tipoContribuyente: !!su.tipoContribuyente, estadoRuc: !!su.estadoRuc, condicionRuc: !!su.condicionRuc,
         actividad: !!su.actividad, inicioActividades: !!su.inicioActividades
